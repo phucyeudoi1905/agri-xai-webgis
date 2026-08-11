@@ -1,0 +1,44 @@
+services:
+  gis-db:
+    image: postgis/postgis:15-3.3
+    container_name: gis_postgis_db
+    environment:
+      POSTGRES_DB: gis_agriculture_db
+      POSTGRES_USER: gis_admin
+      POSTGRES_PASSWORD: SecretPassword123
+    ports:
+      - '5434:5432'
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./gis-service/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gis_admin -d gis_agriculture_db']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gis-backend:
+    build: ./gis-service
+    container_name: gis_backend_service
+    ports:
+      - '4000:4000'
+    environment:
+      PORT: 4000
+      DATABASE_HOST: gis-db
+      DATABASE_PORT: 5434
+      DATABASE_USER: gis_admin
+      DATABASE_PASSWORD: SecretPassword123
+      DATABASE_NAME: gis_agriculture_db
+      JWT_SECRET: SuperSecretJwtKey2026
+      PUC_PROVINCE_CODE: ST
+      PUBLIC_BASE_URL: http://localhost:4000
+      QR_STORAGE_PATH: /app/storage/qr
+    volumes:
+      - qr_storage:/app/storage/qr
+    depends_on:
+      gis-db:
+        condition: service_healthy
+
+volumes:
+  postgis_data:
+  qr_storage:
