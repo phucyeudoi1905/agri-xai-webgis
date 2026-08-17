@@ -86,3 +86,39 @@ export class DiseaseAlertDto {
   @Type(() => Number)
   risk_level?: number;
 }
+
+export class ImportFeatureDto {
+  @Equals('Feature')
+  type: 'Feature';
+
+  @ValidateNested()
+  @Type(() => GeoJsonPolygonDto)
+  geometry: GeoJsonPolygonDto;
+
+  @IsOptional()
+  properties?: {
+    plot_name?: string;
+    crop_type?: string;
+    farmer_id?: string;
+  };
+}
+
+export class ImportGeoJsonDto {
+  @Equals('FeatureCollection')
+  type: 'FeatureCollection';
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ImportFeatureDto)
+  features: ImportFeatureDto[];
+
+  @IsOptional()
+  @IsUUID()
+  default_farmer_id?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  default_crop_type?: string;
+}

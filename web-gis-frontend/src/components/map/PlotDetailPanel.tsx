@@ -7,7 +7,7 @@ import {
   alertStatusLabel,
   growthLabel,
 } from '../../lib/gis';
-import { updateGrowthStatus } from '../../services/gisApi';
+import { updateGrowthStatus, plotReportPdfUrl } from '../../services/gisApi';
 import { RiskBadge } from '../ui/Badge';
 import { EmptyState } from '../ui/EmptyState';
 import { Icon } from '../ui/Icon';
@@ -96,6 +96,14 @@ export function PlotDetailPanel({ puc, onClose, onChanged, onLogShipment }: Prop
               <span className="badge tone-brand">
                 {GROWTH_META[detail.growth_status]?.label ?? detail.growth_status}
               </span>
+              <a
+                className="btn btn-secondary btn-sm"
+                href={plotReportPdfUrl(detail.puc)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                PDF
+              </a>
             </div>
 
             <section className="detail-section">

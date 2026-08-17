@@ -14,6 +14,7 @@ import {
   formatNumber,
 } from '../lib/format';
 import { alertStatusLabel, growthLabel } from '../lib/gis';
+import { plotReportPdfUrl } from '../services/gisApi';
 
 export function TracePage() {
   const navigate = useNavigate();
@@ -176,6 +177,14 @@ export function TracePage() {
                   actions={
                     <div className="row">
                       <RiskBadge level={detail.risk_level} />
+                      <a
+                        className="btn btn-secondary btn-sm"
+                        href={plotReportPdfUrl(detail.puc)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Tải PDF
+                      </a>
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"

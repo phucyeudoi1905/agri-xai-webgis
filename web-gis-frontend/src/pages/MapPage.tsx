@@ -8,7 +8,8 @@ import { PlotDetailPanel } from '../components/map/PlotDetailPanel';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Icon } from '../components/ui/Icon';
 import { useViewportPlots } from '../hooks/usePlotData';
-import { fetchAllPlots, fetchPlotByPuc } from '../services/gisApi';
+import { fetchAllPlots, fetchPlotByPuc, connectRiskSocket } from '../services/gisApi';
+import { useToast } from '../components/ui/toastContext';
 import { formatNumber } from '../lib/format';
 import { RISK_META, growthLabel } from '../lib/gis';
 import type { GeoJsonPolygon } from '../types/gis.types';
@@ -31,12 +32,31 @@ export function MapPage() {
     searchParams.get('puc'),
   );
   const [drawing, setDrawing] = useState(false);
+  const [gpsWalking, setGpsWalking] = useState(false);
   const [pendingBoundary, setPendingBoundary] = useState<GeoJsonPolygon | null>(
     null,
   );
   const [shippingPuc, setShippingPuc] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
+
+  const toast = useToast();
+
+  useEffect(() => {
+    const socket = connectRiskSocket((ev) => {
+      toast.success(
+        'Cập nhật rủi ro realtime',
+        `${ev.puc} → mức ${ev.risk_level}` +
+          (ev.neighbors?.length
+            ? ` · ${ev.neighbors.length} lô cách ly`
+            : ''),
+      );
+      void reload();
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [reload, toast]);
 
   // Điều hướng kèm ?draw=1 từ topbar sẽ bật ngay chế độ vẽ.
   useEffect(() => {
@@ -209,10 +229,13 @@ export function MapPage() {
           features={features}
           selectedPuc={selectedPuc}
           drawing={drawing}
+          gpsWalking={gpsWalking}
           onMapReady={onMapReady}
           onSelect={setSelectedPuc}
           onDrawComplete={handleDrawComplete}
           onDrawCancel={() => setDrawing(false)}
+          onGpsComplete={handleDrawComplete}
+          onGpsCancel={() => setGpsWalking(false)}
         />
 
         <div className="map-float tl">
@@ -220,14 +243,29 @@ export function MapPage() {
             <button
               type="button"
               className="btn btn-sm"
-              disabled={drawing}
+              disabled={drawing || gpsWalking}
               onClick={() => {
                 setDrawing(true);
+                setGpsWalking(false);
                 setSelectedPuc(null);
               }}
             >
               <Icon name="pen" size={15} />
               Vẽ lô đất
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={drawing || gpsWalking}
+              onClick={() => {
+                setGpsWalking(true);
+                setDrawing(false);
+                setSelectedPuc(null);
+              }}
+            >
+              <Icon name="target" size={15} />
+              GPS ranh giới
             </button>
 
             <button
@@ -273,7 +311,7 @@ export function MapPage() {
           </div>
         </div>
 
-        {selectedPuc && !drawing && (
+        {selectedPuc && !drawing && !gpsWalking && (
           <PlotDetailPanel
             puc={selectedPuc}
             onClose={() => setSelectedPuc(null)}

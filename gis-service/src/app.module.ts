@@ -1,21 +1,36 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ApiKeyGuard } from './common/api-key.guard';
+import { RequestLoggingInterceptor } from './common/request-logging.interceptor';
 import { AlertController } from './controllers/alert.controller';
+import { ClimateController } from './controllers/climate.controller';
+import { HealthController } from './controllers/health.controller';
 import { PlotController } from './controllers/plot.controller';
 import { ShippingController } from './controllers/shipping.controller';
 import { GrowthStatusHistoryEntity } from './entities/growth-status-history.entity';
+import { PlotClimateReadingEntity } from './entities/plot-climate-reading.entity';
 import { PlotDiseaseAlertEntity } from './entities/plot-disease-alert.entity';
 import { PlotEntity } from './entities/plot.entity';
 import { PucSequenceEntity } from './entities/puc-sequence.entity';
 import { ShippingLogEntity } from './entities/shipping-log.entity';
+import { RiskGateway } from './gateways/risk.gateway';
 import { PlotRepository } from './repositories/plot.repository';
 import { PlotService } from './services/plot.service';
 import { PucGeneratorService } from './services/puc-generator.service';
+import { ReportService } from './services/report.service';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000,
+        limit: 120,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -31,6 +46,7 @@ import { PucGeneratorService } from './services/puc-generator.service';
           PlotDiseaseAlertEntity,
           GrowthStatusHistoryEntity,
           PucSequenceEntity,
+          PlotClimateReadingEntity,
         ],
         synchronize: false,
         logging: config.get('NODE_ENV') !== 'production',
@@ -42,9 +58,25 @@ import { PucGeneratorService } from './services/puc-generator.service';
       PlotDiseaseAlertEntity,
       GrowthStatusHistoryEntity,
       PucSequenceEntity,
+      PlotClimateReadingEntity,
     ]),
   ],
-  controllers: [PlotController, ShippingController, AlertController],
-  providers: [PlotService, PucGeneratorService, PlotRepository],
+  controllers: [
+    HealthController,
+    PlotController,
+    ShippingController,
+    AlertController,
+    ClimateController,
+  ],
+  providers: [
+    PlotService,
+    PucGeneratorService,
+    PlotRepository,
+    ReportService,
+    RiskGateway,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ApiKeyGuard },
+    { provide: APP_INTERCEPTOR, useClass: RequestLoggingInterceptor },
+  ],
 })
 export class AppModule {}

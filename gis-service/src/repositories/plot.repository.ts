@@ -136,6 +136,33 @@ export class PlotRepository {
     await this.repo.update({ puc }, { riskLevel: riskLevel as never });
   }
 
+  /**
+   * T19: lô trong bán kính `radiusMeters` của PUC nguồn → risk=1,
+   * không hạ risk của lô đang = 2 và không đụng lô nguồn.
+   */
+  async markNeighborsRiskWarning(
+    sourcePuc: string,
+    radiusMeters = 500,
+  ): Promise<Array<{ puc: string; risk_level: number }>> {
+    const rows: Array<{ puc: string; risk_level: number }> =
+      await this.dataSource.query(
+        `UPDATE plots AS n
+         SET risk_level = 1
+         FROM plots AS src
+         WHERE src.puc = $1
+           AND n.puc <> src.puc
+           AND n.risk_level < 2
+           AND ST_DWithin(
+             ST_Transform(n.boundary, 3857),
+             ST_Transform(src.boundary, 3857),
+             $2
+           )
+         RETURNING n.puc, n.risk_level`,
+        [sourcePuc, radiusMeters],
+      );
+    return rows;
+  }
+
   async riskSummary(): Promise<
     { risk_level: number; total_plots: string; total_area_m2: string }[]
   > {

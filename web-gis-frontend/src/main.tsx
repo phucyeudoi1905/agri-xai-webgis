@@ -7,9 +7,11 @@ import { ToastProvider } from './components/ui/Toast';
 import { DashboardPage } from './pages/DashboardPage';
 import { MapPage } from './pages/MapPage';
 import { PlotsPage } from './pages/PlotsPage';
+import { PublicPucPage } from './pages/PublicPucPage';
 import { TracePage } from './pages/TracePage';
 
 const router = createBrowserRouter([
+  { path: '/puc/:puc', element: <PublicPucPage /> },
   {
     path: '/',
     element: <AppShell />,

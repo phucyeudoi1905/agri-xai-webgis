@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { io, type Socket } from 'socket.io-client';
 import type {
   CropStatRow,
   GeoJsonPolygon,
@@ -7,9 +8,19 @@ import type {
   RiskSummaryRow,
 } from '../types/gis.types';
 
+const baseURL = import.meta.env.VITE_GIS_API_URL || 'http://localhost:4000';
+const apiKey = (import.meta.env.VITE_GIS_API_KEY as string | undefined)?.trim();
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_GIS_API_URL || 'http://localhost:4000',
+  baseURL,
   timeout: 15000,
+});
+
+api.interceptors.request.use((config) => {
+  if (apiKey) {
+    config.headers.set('X-API-Key', apiKey);
+  }
+  return config;
 });
 
 export type Bbox = [number, number, number, number];
@@ -61,6 +72,24 @@ export async function createPlot(payload: {
   return data;
 }
 
+export async function importGeoJson(payload: {
+  type: 'FeatureCollection';
+  features: Array<{
+    type: 'Feature';
+    geometry: GeoJsonPolygon;
+    properties?: {
+      plot_name?: string;
+      crop_type?: string;
+      farmer_id?: string;
+    };
+  }>;
+  default_farmer_id?: string;
+  default_crop_type?: string;
+}) {
+  const { data } = await api.post('/api/v1/gis/plots/import', payload);
+  return data;
+}
+
 export async function updateGrowthStatus(
   puc: string,
   growthStatus: string,
@@ -95,13 +124,40 @@ export async function postDiseaseAlert(payload: {
   return data;
 }
 
+export function plotReportPdfUrl(puc: string): string {
+  return `${baseURL}/api/v1/gis/plots/${encodeURIComponent(puc)}/report.pdf`;
+}
+
 export async function pingService(): Promise<boolean> {
   try {
-    await api.get('/api/v1/gis/plots/stats/risk', { timeout: 4000 });
-    return true;
+    const { data } = await api.get<{ status: string; db: string }>('/health', {
+      timeout: 4000,
+    });
+    return data.db === 'up';
   } catch {
     return false;
   }
+}
+
+export interface RiskUpdatedEvent {
+  puc: string;
+  risk_level: number;
+  risk_color: string;
+  neighbors?: Array<{ puc: string; risk_level: number }>;
+  source: string;
+  at: string;
+}
+
+export function connectRiskSocket(
+  onRisk: (ev: RiskUpdatedEvent) => void,
+): Socket {
+  const wsBase = import.meta.env.VITE_GIS_WS_URL || baseURL;
+  const socket = io(`${wsBase}/gis`, {
+    transports: ['websocket', 'polling'],
+    autoConnect: true,
+  });
+  socket.on('risk.updated', onRisk);
+  return socket;
 }
 
 export default api;

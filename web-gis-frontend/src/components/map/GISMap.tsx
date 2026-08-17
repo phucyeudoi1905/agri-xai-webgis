@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import type { GeoJsonPolygon, PlotFeature } from '../../types/gis.types';
 import { PlotLayer } from './PlotLayer';
 import { PolygonDrawTools } from './PolygonDrawTools';
+import { GpsWalkTools } from './GpsWalkTools';
 
 export type Basemap = 'satellite' | 'street' | 'topo';
 
@@ -76,10 +77,13 @@ interface Props {
   features: PlotFeature[];
   selectedPuc: string | null;
   drawing: boolean;
+  gpsWalking: boolean;
   onMapReady: (map: LeafletMap) => void;
   onSelect: (puc: string) => void;
   onDrawComplete: (polygon: GeoJsonPolygon) => void;
   onDrawCancel: () => void;
+  onGpsComplete: (polygon: GeoJsonPolygon) => void;
+  onGpsCancel: () => void;
 }
 
 export function GISMap({
@@ -87,10 +91,13 @@ export function GISMap({
   features,
   selectedPuc,
   drawing,
+  gpsWalking,
   onMapReady,
   onSelect,
   onDrawComplete,
   onDrawCancel,
+  onGpsComplete,
+  onGpsCancel,
 }: Props) {
   const tiles = BASEMAPS[basemap];
 
@@ -120,6 +127,11 @@ export function GISMap({
         active={drawing}
         onComplete={onDrawComplete}
         onCancel={onDrawCancel}
+      />
+      <GpsWalkTools
+        active={gpsWalking}
+        onComplete={onGpsComplete}
+        onCancel={onGpsCancel}
       />
     </MapContainer>
   );
