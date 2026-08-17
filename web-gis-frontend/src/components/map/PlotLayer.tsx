@@ -1,56 +1,63 @@
-import type { Feature, Geometry } from 'geojson';
-import type { PathOptions } from 'leaflet';
-import L from 'leaflet';
 import { useMemo } from 'react';
-import { GeoJSON, useMap } from 'react-leaflet';
-import type { PlotFeature, PlotFeatureCollection } from '../../types/gis.types';
+import { GeoJSON } from 'react-leaflet';
+import type { Feature, FeatureCollection, Geometry } from 'geojson';
+import type { PathOptions } from 'leaflet';
+import { formatNumber } from '../../lib/format';
+import { growthLabel } from '../../lib/gis';
+import type { PlotFeature, PlotProperties } from '../../types/gis.types';
 
 interface Props {
-  data: PlotFeatureCollection | null;
+  features: PlotFeature[];
   selectedPuc: string | null;
   onSelect: (puc: string) => void;
 }
 
-function styleFor(
-  feature?: Feature<Geometry, PlotFeature['properties']>,
-): PathOptions {
-  const risk = feature?.properties?.risk_level ?? 0;
-  const color = feature?.properties?.risk_color ?? '#2E7D32';
-  return {
-    color,
-    weight: risk === 2 ? 3 : 2,
-    fillColor: color,
-    fillOpacity: 0.35,
-    className: risk === 2 ? 'plot-blink' : undefined,
-  };
-}
-
-export function PlotLayer({ data, selectedPuc, onSelect }: Props) {
-  const map = useMap();
-
-  const key = useMemo(
-    () =>
-      `${data?.features.map((f) => f.properties.puc).join(',')}-${data?.features.map((f) => f.properties.risk_level).join(',')}`,
-    [data],
+export function PlotLayer({ features, selectedPuc, onSelect }: Props) {
+  const collection = useMemo<FeatureCollection>(
+    () => ({ type: 'FeatureCollection', features: features as never }),
+    [features],
   );
 
-  if (!data) return null;
+  // Leaflet không diff GeoJSON theo props, nên remount khi tập dữ liệu đổi.
+  const key = useMemo(
+    () =>
+      features
+        .map((f) => `${f.properties.puc}:${f.properties.risk_level}`)
+        .join('|') + `#${selectedPuc ?? ''}`,
+    [features, selectedPuc],
+  );
+
+  const style = (feature?: Feature<Geometry, PlotProperties>): PathOptions => {
+    const props = feature?.properties;
+    const color = props?.risk_color ?? '#2E7D32';
+    const isSelected = props?.puc === selectedPuc;
+
+    return {
+      color: isSelected ? '#0b1524' : color,
+      weight: isSelected ? 3 : props?.risk_level === 2 ? 2.5 : 1.8,
+      fillColor: color,
+      fillOpacity: isSelected ? 0.5 : 0.32,
+      dashArray: isSelected ? undefined : undefined,
+      className: props?.risk_level === 2 && !isSelected ? 'plot-blink' : undefined,
+    };
+  };
+
+  if (features.length === 0) return null;
 
   return (
     <GeoJSON
-      key={key || 'empty'}
-      data={data as GeoJSON.FeatureCollection}
-      style={styleFor}
+      key={key}
+      data={collection}
+      style={style as never}
       onEachFeature={(feature, layer) => {
-        const props = feature.properties as PlotFeature['properties'];
+        const p = feature.properties as PlotProperties;
         layer.bindTooltip(
-          `<strong>${props.plot_name}</strong><br/>PUC: ${props.puc}<br/>${props.crop_type}`,
-          { sticky: true },
+          `<strong>${p.plot_name}</strong><br/>${p.puc}<br/>${p.crop_type} · ${growthLabel(
+            p.growth_status,
+          )}<br/>${formatNumber(p.area_m2 / 10000, 2)} ha`,
+          { sticky: true, direction: 'top', opacity: 1 },
         );
-        layer.on('click', () => onSelect(props.puc));
-        if (selectedPuc && props.puc === selectedPuc && layer instanceof L.Polygon) {
-          map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 17 });
-        }
+        layer.on('click', () => onSelect(p.puc));
       }}
     />
   );

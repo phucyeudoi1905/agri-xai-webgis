@@ -2,7 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { join } from 'path';
+import { resolve } from 'path';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -17,10 +17,10 @@ async function bootstrap() {
     }),
   );
 
-  const qrDir = process.env.QR_STORAGE_PATH || './storage/qr';
-  app.useStaticAssets(join(process.cwd(), qrDir), {
-    prefix: '/storage/qr/',
-  });
+  // QR_STORAGE_PATH có thể là đường dẫn tuyệt đối (Docker) hoặc tương đối (dev),
+  // dùng resolve để khớp đúng thư mục mà PucGeneratorService ghi file.
+  const qrDir = resolve(process.env.QR_STORAGE_PATH || './storage/qr');
+  app.useStaticAssets(qrDir, { prefix: '/storage/qr/' });
 
   const swagger = new DocumentBuilder()
     .setTitle('Agri XAI — GIS Service')

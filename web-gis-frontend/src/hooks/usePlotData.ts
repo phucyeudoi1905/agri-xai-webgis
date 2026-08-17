@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
-import { fetchPlotsByBbox } from '../services/gisApi';
-import type { PlotFeatureCollection } from '../types/gis.types';
+import { fetchAllPlots, fetchPlotsByBbox, type Bbox } from '../services/gisApi';
+import { errorMessage } from '../lib/format';
+import type { PlotFeature, PlotFeatureCollection } from '../types/gis.types';
 
-function bboxFromMap(map: LeafletMap): [number, number, number, number] {
+function bboxFromMap(map: LeafletMap): Bbox {
   const b = map.getBounds();
   return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
 }
 
-export function usePlotData(map: LeafletMap | null) {
-  const [data, setData] = useState<PlotFeatureCollection | null>(null);
+/** Nạp lô đất theo khung nhìn (BBOX) — NFR viewport-based loading của BA. */
+export function useViewportPlots(map: LeafletMap | null) {
+  const [features, setFeatures] = useState<PlotFeature[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
@@ -20,9 +22,9 @@ export function usePlotData(map: LeafletMap | null) {
     setError(null);
     try {
       const fc = await fetchPlotsByBbox(bboxFromMap(map));
-      setData(fc);
+      setFeatures(fc.features ?? []);
     } catch (e) {
-      setError((e as Error).message || 'Không tải được dữ liệu lô đất');
+      setError(errorMessage(e, 'Không tải được dữ liệu lô đất'));
     } finally {
       setLoading(false);
     }
@@ -33,9 +35,7 @@ export function usePlotData(map: LeafletMap | null) {
 
     const schedule = () => {
       if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => {
-        void reload();
-      }, 350);
+      timer.current = window.setTimeout(() => void reload(), 350);
     };
 
     map.on('moveend', schedule);
@@ -49,5 +49,35 @@ export function usePlotData(map: LeafletMap | null) {
     };
   }, [map, reload]);
 
-  return { data, loading, error, reload };
+  return { features, loading, error, reload };
+}
+
+/** Nạp toàn bộ lô đất cho trang danh sách / thống kê. */
+export function useAllPlots() {
+  const [data, setData] = useState<PlotFeatureCollection | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await fetchAllPlots());
+    } catch (e) {
+      setError(errorMessage(e, 'Không tải được danh sách lô đất'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return {
+    features: data?.features ?? [],
+    loading,
+    error,
+    reload,
+  };
 }

@@ -67,6 +67,29 @@ export interface PlotDetail {
     unit: string;
     destination: string;
   }>;
+  growth_history?: Array<{
+    id: string;
+    fromStatus: GrowthStatus | null;
+    toStatus: GrowthStatus;
+    changedBy: string | null;
+    changedAt: string;
+  }>;
+}
+
+export interface RiskSummaryRow {
+  risk_level: RiskLevel;
+  risk_color: string;
+  total_plots: number;
+  total_area_m2: number;
+  total_area_ha: number;
+}
+
+/** Backend trả các trị số dạng chuỗi để giữ độ chính xác NUMERIC. */
+export interface CropStatRow {
+  crop_type: string;
+  total_plots: string;
+  total_area_m2: string;
+  total_area_ha: string;
 }
 
 export const RISK_COLORS: Record<RiskLevel, string> = {
