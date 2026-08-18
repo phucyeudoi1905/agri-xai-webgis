@@ -47,7 +47,7 @@ Deploy: [DEPLOY.md](./DEPLOY.md)
 | T11 | Xuất PDF hồ sơ lô đất | ✅ Done | T06, T07 |
 | T21 | Public Trace landing `/puc/:puc` (QR lookup) | ✅ Done | T08 |
 | T22 | Vector tiles / MVT (pg_tileserv) — scaffold docs | 📋 Spec ready | Scale |
-| T23 | GPS walk-to-draw PWA — scaffold docs | 📋 Spec ready | T08 |
+| T23 | GPS walk + **nhập sổ đất (số đỉnh + tọa độ)** | ✅ UI done | T08 |
 | T24 | IoT micro-climate timeseries — DDL + API stub | ✅ Stub | T01 |
 
 ## Runtime

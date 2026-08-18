@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import L, { type Map as LeafletMap } from 'leaflet';
+import { CadastralEntryModal } from '../components/forms/CadastralEntryModal';
 import { CreatePlotModal } from '../components/forms/CreatePlotModal';
 import { ShippingModal } from '../components/forms/ShippingModal';
 import { GISMap, type Basemap } from '../components/map/GISMap';
@@ -33,6 +34,7 @@ export function MapPage() {
   );
   const [drawing, setDrawing] = useState(false);
   const [gpsWalking, setGpsWalking] = useState(false);
+  const [cadastralOpen, setCadastralOpen] = useState(false);
   const [pendingBoundary, setPendingBoundary] = useState<GeoJsonPolygon | null>(
     null,
   );
@@ -135,6 +137,16 @@ export function MapPage() {
   const handleDrawComplete = (polygon: GeoJsonPolygon) => {
     setPendingBoundary(polygon);
     setDrawing(false);
+    setGpsWalking(false);
+    setCadastralOpen(false);
+
+    const ring = polygon.coordinates[0] ?? [];
+    if (map && ring.length > 0) {
+      map.fitBounds(
+        L.latLngBounds(ring.map(([lng, lat]) => L.latLng(lat, lng))),
+        { padding: [60, 60], maxZoom: 17 },
+      );
+    }
   };
 
   const handleCreated = async (puc: string) => {
@@ -257,7 +269,7 @@ export function MapPage() {
             <button
               type="button"
               className="btn btn-secondary btn-sm"
-              disabled={drawing || gpsWalking}
+              disabled={drawing || gpsWalking || cadastralOpen}
               onClick={() => {
                 setGpsWalking(true);
                 setDrawing(false);
@@ -266,6 +278,21 @@ export function MapPage() {
             >
               <Icon name="target" size={15} />
               GPS ranh giới
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              disabled={drawing || gpsWalking}
+              onClick={() => {
+                setCadastralOpen(true);
+                setDrawing(false);
+                setGpsWalking(false);
+                setSelectedPuc(null);
+              }}
+            >
+              <Icon name="list" size={15} />
+              Nhập sổ đất
             </button>
 
             <button
@@ -314,7 +341,7 @@ export function MapPage() {
           </div>
         </div>
 
-        {selectedPuc && !drawing && !gpsWalking && (
+        {selectedPuc && !drawing && !gpsWalking && !cadastralOpen && (
           <PlotDetailPanel
             puc={selectedPuc}
             onClose={() => setSelectedPuc(null)}
@@ -323,6 +350,13 @@ export function MapPage() {
           />
         )}
       </div>
+
+      {cadastralOpen && !pendingBoundary && (
+        <CadastralEntryModal
+          onClose={() => setCadastralOpen(false)}
+          onComplete={handleDrawComplete}
+        />
+      )}
 
       {pendingBoundary && (
         <CreatePlotModal
