@@ -106,6 +106,8 @@
 .map-float.tl {
   top: 14px;
   left: 14px;
+  z-index: 440;
+  max-width: calc(100% - 28px);
 }
 
 .map-float.tr {
@@ -121,6 +123,7 @@
 .map-toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 6px;
   border: 1px solid var(--border);
@@ -181,13 +184,17 @@
 
 .draw-banner {
   position: absolute;
-  top: 14px;
+  /* Nằm dưới toolbar góc trái (khoảng 52px cao + 14px offset) để không chồng lên basemap */
+  top: 68px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 430;
+  z-index: 410;
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 12px;
+  max-width: min(520px, calc(100% - 28px));
   padding: 9px 10px 9px 14px;
   border-radius: var(--r-full);
   background: var(--text-strong);
@@ -195,6 +202,12 @@
   font-size: 12.5px;
   box-shadow: var(--shadow-lg);
   animation: slide-down 200ms var(--ease);
+  pointer-events: auto;
+}
+
+.draw-banner > span {
+  text-align: center;
+  line-height: 1.35;
 }
 
 .draw-banner kbd {

@@ -277,20 +277,23 @@ export function MapPage() {
               {loading ? <span className="spinner" /> : <Icon name="refresh" size={16} />}
             </button>
 
-            <span className="divider-v" />
-
-            <div className="segmented">
-              {BASEMAP_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  aria-pressed={basemap === opt.id}
-                  onClick={() => setBasemap(opt.id)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+            {!drawing && !gpsWalking && (
+              <>
+                <span className="divider-v" />
+                <div className="segmented">
+                  {BASEMAP_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      aria-pressed={basemap === opt.id}
+                      onClick={() => setBasemap(opt.id)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
