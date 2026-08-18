@@ -57,7 +57,12 @@ export class PucGeneratorService {
       'PUBLIC_BASE_URL',
       'http://localhost:4000',
     );
-    const lookupUrl = `${baseUrl.replace(/\/$/, '')}/puc/${puc}`;
+    // QR trỏ tới landing FE công khai (/puc/:puc), fallback API base nếu chưa cấu hình FE.
+    const frontendBase = this.config.get<string>(
+      'FRONTEND_PUBLIC_URL',
+      'http://localhost:5173',
+    );
+    const lookupUrl = `${frontendBase.replace(/\/$/, '')}/puc/${puc}`;
 
     await QRCode.toFile(qrPath, lookupUrl, {
       type: 'png',

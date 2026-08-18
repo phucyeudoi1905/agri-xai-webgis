@@ -14,12 +14,15 @@ import {
 } from '../utils/spatial/geojson.util';
 import { PucGeneratorService } from './puc-generator.service';
 import { RISK_COLORS } from '../common/enums';
+import { RiskGateway } from '../gateways/risk.gateway';
+import { ImportGeoJsonDto } from '../dtos/create-plot.dto';
 
 @Injectable()
 export class PlotService {
   constructor(
     private readonly plots: PlotRepository,
     private readonly pucGenerator: PucGeneratorService,
+    private readonly riskGateway: RiskGateway,
     @InjectRepository(GrowthStatusHistoryEntity)
     private readonly growthHistory: Repository<GrowthStatusHistoryEntity>,
     @InjectRepository(ShippingLogEntity)
@@ -309,6 +312,20 @@ export class PlotService {
 
     await this.plots.updateRiskLevel(input.puc, risk);
 
+    let neighbors: Array<{ puc: string; risk_level: number }> = [];
+    if (risk === RiskLevel.NGUY_CO_CAO) {
+      neighbors = await this.plots.markNeighborsRiskWarning(input.puc, 500);
+    }
+
+    this.riskGateway.emitRiskUpdated({
+      puc: input.puc,
+      risk_level: risk,
+      risk_color: RISK_COLORS[risk as RiskLevel],
+      neighbors,
+      source: 'disease-alert',
+      at: new Date().toISOString(),
+    });
+
     return {
       code: 'SUCCESS',
       message: 'Tiếp nhận cảnh báo dịch bệnh và cập nhật màu bản đồ.',
@@ -316,7 +333,44 @@ export class PlotService {
         alert,
         risk_level: risk,
         risk_color: RISK_COLORS[risk as RiskLevel],
+        isolation_neighbors: neighbors,
       },
+    };
+  }
+
+  async importGeoJson(dto: ImportGeoJsonDto) {
+    const farmer =
+      dto.default_farmer_id ?? 'a3b8e912-4c5d-6e7f-8a9b-0c1d2e3f4a5b';
+    const crop = dto.default_crop_type ?? 'Chưa phân loại';
+    const created: string[] = [];
+    const errors: Array<{ index: number; message: string }> = [];
+
+    for (let i = 0; i < dto.features.length; i += 1) {
+      const f = dto.features[i];
+      try {
+        const res = await this.createPlot({
+          farmer_id: f.properties?.farmer_id ?? farmer,
+          plot_name:
+            f.properties?.plot_name ?? `Lô import #${i + 1}`,
+          crop_type: f.properties?.crop_type ?? crop,
+          boundary: f.geometry as never,
+        });
+        created.push(res.data.puc);
+      } catch (e) {
+        const err = e as { message?: string; getResponse?: () => unknown };
+        const body = err.getResponse?.() as { message?: string } | string | undefined;
+        const message =
+          typeof body === 'object' && body?.message
+            ? body.message
+            : err.message || 'Import feature thất bại';
+        errors.push({ index: i, message: String(message) });
+      }
+    }
+
+    return {
+      code: 'SUCCESS',
+      message: `Import xong: ${created.length} thành công, ${errors.length} lỗi.`,
+      data: { created, errors },
     };
   }
 
