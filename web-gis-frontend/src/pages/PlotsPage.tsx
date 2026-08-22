@@ -1,22 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GrowthBadge, RiskBadge } from '../components/ui/Badge';
+import { GrowthBadge } from '../components/ui/Badge';
 import { Card, CardHead } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Icon } from '../components/ui/Icon';
 import { useAllPlots } from '../hooks/usePlotData';
 import { formatDate, formatNumber } from '../lib/format';
-import { RISK_META } from '../lib/gis';
 
-type SortKey = 'created' | 'area' | 'risk' | 'name';
+
+type SortKey = 'created' | 'area' | 'name';
 
 export function PlotsPage() {
   const navigate = useNavigate();
   const { features, loading, error, reload } = useAllPlots();
   const [query, setQuery] = useState('');
-  const [risk, setRisk] = useState<'all' | '0' | '1' | '2'>('all');
-  const [crop, setCrop] = useState('all');
   const [sort, setSort] = useState<SortKey>('created');
+  const [crop, setCrop] = useState('all');
 
   const crops = useMemo(
     () => [...new Set(features.map((f) => f.properties.crop_type))].sort(),
@@ -31,9 +30,8 @@ export function PlotsPage() {
         !q ||
         p.plot_name.toLowerCase().includes(q) ||
         p.puc.toLowerCase().includes(q);
-      const matchRisk = risk === 'all' || String(p.risk_level) === risk;
       const matchCrop = crop === 'all' || p.crop_type === crop;
-      return matchQuery && matchRisk && matchCrop;
+      return matchQuery && matchCrop;
     });
 
     return filtered.sort((a, b) => {
@@ -42,15 +40,13 @@ export function PlotsPage() {
       switch (sort) {
         case 'area':
           return pb.area_m2 - pa.area_m2;
-        case 'risk':
-          return pb.risk_level - pa.risk_level;
         case 'name':
           return pa.plot_name.localeCompare(pb.plot_name, 'vi');
         default:
           return (pb.created_at ?? '').localeCompare(pa.created_at ?? '');
       }
     });
-  }, [features, query, risk, crop, sort]);
+  }, [features, query, crop, sort]);
 
   const totalArea = rows.reduce((acc, f) => acc + f.properties.area_m2, 0);
 
@@ -118,22 +114,10 @@ export function PlotsPage() {
             >
               <option value="created">Mới nhất</option>
               <option value="area">Diện tích lớn nhất</option>
-              <option value="risk">Rủi ro cao nhất</option>
               <option value="name">Tên A→Z</option>
             </select>
 
-            <div className="segmented">
-              {(['all', '0', '1', '2'] as const).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  aria-pressed={risk === key}
-                  onClick={() => setRisk(key)}
-                >
-                  {key === 'all' ? 'Tất cả' : RISK_META[Number(key) as 0 | 1 | 2].short}
-                </button>
-              ))}
-            </div>
+
           </div>
         </div>
 
@@ -188,9 +172,9 @@ export function PlotsPage() {
                   <tr>
                     <th>Lô đất</th>
                     <th>Mã PUC</th>
+                    <th>Chủ hộ / HTX</th>
                     <th>Cây trồng</th>
                     <th>Sinh trưởng</th>
-                    <th>Rủi ro</th>
                     <th className="align-right">Diện tích (ha)</th>
                     <th>Ngày tạo</th>
                     <th aria-label="Hành động" />
@@ -209,12 +193,19 @@ export function PlotsPage() {
                       >
                         <td className="cell-strong">{p.plot_name}</td>
                         <td className="mono muted">{p.puc}</td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 600, fontSize: 13 }}>
+                              {p.farmer_name || "K'Brông (Đại diện Hộ)"}
+                            </span>
+                            <span className="muted" style={{ fontSize: 11.5 }}>
+                              {p.cooperative_name || 'HTX Cà Phê Cầu Đất Farm'}
+                            </span>
+                          </div>
+                        </td>
                         <td>{p.crop_type}</td>
                         <td>
                           <GrowthBadge status={p.growth_status} />
-                        </td>
-                        <td>
-                          <RiskBadge level={p.risk_level} />
                         </td>
                         <td className="align-right">
                           {formatNumber(p.area_m2 / 10000, 2)}

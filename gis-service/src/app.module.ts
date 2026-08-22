@@ -12,6 +12,7 @@ import { PlotController } from './controllers/plot.controller';
 import { ShippingController } from './controllers/shipping.controller';
 import { GrowthStatusHistoryEntity } from './entities/growth-status-history.entity';
 import { PlotClimateReadingEntity } from './entities/plot-climate-reading.entity';
+import { PlotCropHistoryEntity } from './entities/plot-crop-history.entity';
 import { PlotDiseaseAlertEntity } from './entities/plot-disease-alert.entity';
 import { PlotEntity } from './entities/plot.entity';
 import { PucSequenceEntity } from './entities/puc-sequence.entity';
@@ -21,6 +22,7 @@ import { PlotRepository } from './repositories/plot.repository';
 import { PlotService } from './services/plot.service';
 import { PucGeneratorService } from './services/puc-generator.service';
 import { ReportService } from './services/report.service';
+import { WeatherService } from './services/weather.service';
 
 @Module({
   imports: [
@@ -47,6 +49,7 @@ import { ReportService } from './services/report.service';
           GrowthStatusHistoryEntity,
           PucSequenceEntity,
           PlotClimateReadingEntity,
+          PlotCropHistoryEntity,
         ],
         synchronize: false,
         logging: config.get('NODE_ENV') !== 'production',
@@ -59,6 +62,7 @@ import { ReportService } from './services/report.service';
       GrowthStatusHistoryEntity,
       PucSequenceEntity,
       PlotClimateReadingEntity,
+      PlotCropHistoryEntity,
     ]),
   ],
   controllers: [
@@ -73,6 +77,7 @@ import { ReportService } from './services/report.service';
     PucGeneratorService,
     PlotRepository,
     ReportService,
+    WeatherService,
     RiskGateway,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: ApiKeyGuard },

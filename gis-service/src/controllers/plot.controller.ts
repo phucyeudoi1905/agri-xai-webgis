@@ -102,4 +102,24 @@ export class PlotController {
       dto.changed_by,
     );
   }
+
+  @Post(':puc/crop-history')
+  @ApiOperation({ summary: 'Ghi nhận mùa vụ / luân canh cây trồng cho lô đất' })
+  addCropHistory(
+    @Param('puc') puc: string,
+    @Body()
+    body: {
+      season_name: string;
+      crop_type: string;
+      start_date: string;
+      end_date?: string;
+      yield_amount?: number;
+      yield_unit?: string;
+      soil_condition_note?: string;
+      disease_history?: string;
+      is_current?: boolean;
+    },
+  ) {
+    return this.plotService.addCropHistory(puc, body);
+  }
 }

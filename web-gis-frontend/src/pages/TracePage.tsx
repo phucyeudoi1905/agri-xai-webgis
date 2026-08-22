@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShippingModal } from '../components/forms/ShippingModal';
-import { RiskBadge } from '../components/ui/Badge';
+
 import { Card, CardBody, CardHead } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Icon } from '../components/ui/Icon';
 import { StatCard } from '../components/ui/StatCard';
+import { WeatherCard } from '../components/ui/WeatherCard';
 import { usePlotDetail } from '../hooks/usePlotDetail';
 import {
   formatArea,
@@ -13,25 +14,37 @@ import {
   formatDateTime,
   formatNumber,
 } from '../lib/format';
-import { alertStatusLabel, growthLabel } from '../lib/gis';
+import { growthLabel } from '../lib/gis';
 import { plotReportPdfUrl } from '../services/gisApi';
+import { CropHistoryTimeline } from '../components/crops/CropHistoryTimeline';
+
+const DEMO_PUCS = [
+  { puc: 'VN-LD-2026-000003', name: 'Lô Cà Phê Arabica Cầu Đất C1', crop: 'Cà phê Arabica', farmer: "K'Brông (Đại diện Hộ)" },
+  { puc: 'VN-LD-2026-000001', name: 'Lô Dâu Tây New Zealand A1', crop: 'Dâu tây New Zealand', farmer: 'Nguyễn Văn An' },
+  { puc: 'VN-LD-2026-000002', name: 'Lô Rau Thủy Canh Vạn Thành B2', crop: 'Xà lách Lolo Bosa', farmer: 'Trần Thị Mai' },
+  { puc: 'VN-LD-2026-000005', name: 'Lô Atisô Trại Mát E2', crop: 'Atisô Đà Lạt', farmer: 'Phạm Đức Trọng' },
+  { puc: 'VN-LD-2026-000004', name: 'Lô Hoa Cúc Thái Phiên D3', crop: 'Hoa Cúc Đại Đóa', farmer: 'Lê Hoàng Nam' },
+  { puc: 'VN-LD-2026-000006', name: 'Lô Ớt Chuông Nhà Kính F1', crop: 'Ớt chuông Sweet', farmer: 'Đặng Thu Hà' },
+];
 
 export function TracePage() {
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activePuc = searchParams.get('puc');
-  const [input, setInput] = useState(activePuc ?? '');
+  const navigate = useNavigate();
+  const activePuc = searchParams.get('puc') ?? '';
+  const [input, setInput] = useState(activePuc);
   const [shippingOpen, setShippingOpen] = useState(false);
+
   const { detail, loading, error, notFound, reload } = usePlotDetail(activePuc);
 
   useEffect(() => {
-    setInput(activePuc ?? '');
+    setInput(activePuc);
   }, [activePuc]);
 
-  const submit = () => {
-    const puc = input.trim().toUpperCase();
-    if (!puc) return;
-    setSearchParams({ puc }, { replace: true });
+  const submit = (customPuc?: string) => {
+    const target = (customPuc ?? input).trim().toUpperCase();
+    if (!target) return;
+    setInput(target);
+    setSearchParams({ puc: target }, { replace: true });
   };
 
   const totalShipped =
@@ -50,7 +63,7 @@ export function TracePage() {
               <input
                 className="input mono"
                 value={input}
-                placeholder="VN-ST-2026-000001"
+                placeholder="VN-LD-2026-000001"
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') submit();
@@ -60,7 +73,7 @@ export function TracePage() {
             <button
               type="button"
               className="btn"
-              onClick={submit}
+              onClick={() => submit()}
               disabled={!input.trim()}
             >
               <Icon name="qr" size={15} />
@@ -68,30 +81,61 @@ export function TracePage() {
             </button>
           </div>
           <p className="field-hint" style={{ marginTop: 8 }}>
-            Nhập mã vùng trồng in trên bao bì hoặc quét QR để xem vị trí lô đất,
-            cảnh báo dịch bệnh và lịch sử xuất xưởng.
+            Nhập mã vùng trồng in trên bao bì hoặc quét QR để xem vị trí lô đất, chủ hộ, thổ nhưỡng và lịch sử xuất xưởng.
           </p>
         </CardBody>
       </Card>
 
       {!activePuc && (
         <Card>
+          <CardHead
+            title="Gợi ý tra cứu nhanh (Demo PUCs Lâm Đồng)"
+            subtitle="Nhấp trực tiếp vào lô đất để xem hồ sơ truy xuất Farm-to-Fork nguồn gốc"
+          />
           <CardBody>
-            <EmptyState
-              icon="qr"
-              title="Chưa có mã nào được tra cứu"
-              description="Nhập mã PUC ở trên, hoặc chọn một lô đất từ danh sách để xem hồ sơ truy xuất đầy đủ."
-              action={
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => navigate('/plots')}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+              {DEMO_PUCS.map((item) => (
+                <div
+                  key={item.puc}
+                  className="quick-puc-card"
+                  onClick={() => submit(item.puc)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    padding: '12px 14px',
+                    borderRadius: 'var(--r-md)',
+                    background: 'var(--bg-subtle)',
+                    border: '1px solid var(--border)',
+                    cursor: 'pointer',
+                    transition: 'all var(--dur) var(--ease)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--brand-500)';
+                    e.currentTarget.style.background = 'var(--bg-hover)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.background = 'var(--bg-subtle)';
+                  }}
                 >
-                  <Icon name="list" size={15} />
-                  Mở danh sách lô đất
-                </button>
-              }
-            />
+                  <div className="row-between">
+                    <span className="mono font-bold" style={{ color: 'var(--brand-500)', fontSize: 13 }}>
+                      {item.puc}
+                    </span>
+                    <span className="badge tone-brand" style={{ fontSize: 11 }}>
+                      {item.crop}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-strong)' }}>
+                    {item.name}
+                  </span>
+                  <span className="muted" style={{ fontSize: 12 }}>
+                    👤 Đại diện: {item.farmer}
+                  </span>
+                </div>
+              ))}
+            </div>
           </CardBody>
         </Card>
       )}
@@ -131,7 +175,7 @@ export function TracePage() {
 
       {activePuc && !loading && detail && (
         <>
-          <div className="grid grid-4">
+          <div className="grid grid-3">
             <StatCard
               label="Diện tích"
               value={formatNumber(detail.area_ha, 2)}
@@ -148,17 +192,6 @@ export function TracePage() {
               tone="brand"
             />
             <StatCard
-              label="Cảnh báo dịch bệnh"
-              value={formatNumber(detail.alerts?.length ?? 0)}
-              hint={
-                detail.risk_level === 0
-                  ? 'Lô đất an toàn'
-                  : 'Đang có cảnh báo hoạt động'
-              }
-              icon="alert"
-              tone={detail.risk_level === 2 ? 'risk2' : detail.risk_level === 1 ? 'risk1' : 'risk0'}
-            />
-            <StatCard
               label="Đã xuất xưởng"
               value={formatNumber(totalShipped)}
               unit="kg"
@@ -170,13 +203,83 @@ export function TracePage() {
 
           <div className="grid grid-sidebar">
             <div className="stack">
+              {/* Thẻ Đại diện chủ hộ */}
+              <div className="farmer-profile-card">
+                <div className="farmer-profile-top">
+                  <div className="farmer-avatar-circle">
+                    {detail.farmer_name
+                      ? detail.farmer_name.charAt(0).toUpperCase()
+                      : 'K'}
+                  </div>
+                  <div className="farmer-main-info">
+                    <span className="farmer-name-text">
+                      {detail.farmer_name || "K'Brông (Đại diện Hộ)"}
+                    </span>
+                    <span className="farmer-coop-text">
+                      {detail.cooperative_name || 'HTX Cà Phê Cầu Đất Farm'}
+                    </span>
+                  </div>
+                  <a
+                    className="farmer-phone-btn"
+                    href={`tel:${detail.farmer_phone || '0977412550'}`}
+                    title="Gọi trực tiếp cho chủ hộ"
+                  >
+                    <Icon name="phone" size={13} />
+                    <span>{detail.farmer_phone || '0977 412 550'}</span>
+                  </a>
+                </div>
+                <div className="farmer-address-row">
+                  <Icon name="map-pin" size={13} />
+                  <span>
+                    {detail.address_text || 'Xuân Trường, TP Đà Lạt, Lâm Đồng'}{' '}
+                    <span className="farmer-elev-tag">
+                      (Elev: {detail.elevation_m || 1540}m, Slope: {detail.slope_deg || 16.5}°)
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <Card>
+                <CardHead
+                  title="Đặc tính Thổ nhưỡng & Địa hình"
+                  subtitle="Thông số lý hóa tầng đất canh tác cao nguyên"
+                />
+                <CardBody>
+                  <div className="soil-grid">
+                    <div className="soil-stat-box">
+                      <span className="soil-stat-label">Loại đất</span>
+                      <span className="soil-stat-val">
+                        {detail.soil_type || 'Đất đỏ Bazan màu mỡ'}
+                      </span>
+                    </div>
+                    <div className="soil-stat-box">
+                      <span className="soil-stat-label">Độ pH đất</span>
+                      <span className="soil-stat-val" style={{ color: 'var(--brand-500)' }}>
+                        {detail.soil_ph || 5.8} (Lý tưởng)
+                      </span>
+                    </div>
+                    <div className="soil-stat-box">
+                      <span className="soil-stat-label">Độ ẩm tầng rễ</span>
+                      <span className="soil-stat-val">
+                        {detail.soil_moisture || 74}%
+                      </span>
+                    </div>
+                    <div className="soil-stat-box">
+                      <span className="soil-stat-label">Dinh dưỡng hữu cơ</span>
+                      <span className="soil-stat-val" style={{ fontSize: 12 }}>
+                        {detail.soil_organic_matter || 'Mùn hữu cơ cao (4.2%)'}
+                      </span>
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+
               <Card>
                 <CardHead
                   title={detail.plot_name}
                   subtitle={`Mã vùng trồng ${detail.puc}`}
                   actions={
                     <div className="row">
-                      <RiskBadge level={detail.risk_level} />
                       <a
                         className="btn btn-secondary btn-sm"
                         href={plotReportPdfUrl(detail.puc)}
@@ -205,10 +308,8 @@ export function TracePage() {
                       <dd className="mono">{detail.puc}</dd>
                     </div>
                     <div>
-                      <dt>Chủ hộ (farmer_id)</dt>
-                      <dd className="mono" style={{ fontSize: 11.5 }}>
-                        {detail.farmer_id}
-                      </dd>
+                      <dt>Hợp tác xã / Trang trại</dt>
+                      <dd>{detail.cooperative_name || 'HTX Cà Phê Cầu Đất Farm'}</dd>
                     </div>
                     <div>
                       <dt>Loại cây trồng</dt>
@@ -226,6 +327,16 @@ export function TracePage() {
                       <dd>{formatDate(detail.created_at)}</dd>
                     </div>
                   </dl>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardBody>
+                  <CropHistoryTimeline
+                    puc={detail.puc}
+                    history={detail.crop_history}
+                    onReload={() => void reload()}
+                  />
                 </CardBody>
               </Card>
 
@@ -308,38 +419,7 @@ export function TracePage() {
                 </Card>
               )}
 
-              <Card>
-                <CardHead title="Cảnh báo dịch bệnh" />
-                <CardBody>
-                  {!detail.alerts || detail.alerts.length === 0 ? (
-                    <p className="muted" style={{ fontSize: 12.5 }}>
-                      Không có cảnh báo nào cho lô đất này.
-                    </p>
-                  ) : (
-                    detail.alerts.map((a) => (
-                      <div className="alert-item" key={a.id}>
-                        <div className="row-between">
-                          <strong style={{ fontSize: 13 }}>{a.diseaseName}</strong>
-                          <span className="badge risk-2">
-                            {formatNumber(Number(a.confidence), 1)}%
-                          </span>
-                        </div>
-                        <span className="faint" style={{ fontSize: 11.5 }}>
-                          {formatDateTime(a.alertDate)} ·{' '}
-                          {alertStatusLabel(a.status)}
-                        </span>
-                        {a.xaiOverlayUrl && (
-                          <img
-                            className="xai-img"
-                            src={a.xaiOverlayUrl}
-                            alt="Ảnh AI khoanh vùng bệnh"
-                          />
-                        )}
-                      </div>
-                    ))
-                  )}
-                </CardBody>
-              </Card>
+              <WeatherCard puc={detail.puc} title="Vi khí hậu tại thửa ruộng" />
 
               <Card>
                 <CardHead title="Lịch sử sinh trưởng" />

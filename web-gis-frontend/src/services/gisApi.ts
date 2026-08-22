@@ -124,6 +124,27 @@ export async function postDiseaseAlert(payload: {
   return data;
 }
 
+export async function addCropSeason(
+  puc: string,
+  payload: {
+    season_name: string;
+    crop_type: string;
+    start_date: string;
+    end_date?: string;
+    yield_amount?: number;
+    yield_unit?: string;
+    soil_condition_note?: string;
+    disease_history?: string;
+    is_current?: boolean;
+  },
+) {
+  const { data } = await api.post(
+    `/api/v1/gis/plots/${encodeURIComponent(puc)}/crop-history`,
+    payload,
+  );
+  return data;
+}
+
 export function plotReportPdfUrl(puc: string): string {
   return `${baseURL}/api/v1/gis/plots/${encodeURIComponent(puc)}/report.pdf`;
 }
@@ -160,4 +181,20 @@ export function connectRiskSocket(
   return socket;
 }
 
+export async function fetchPlotWeather(puc: string) {
+  const { data } = await api.get<{ code: string; data: import('../types/gis.types').PlotWeatherReport }>(
+    `/api/v1/gis/climate/${encodeURIComponent(puc)}/weather`,
+  );
+  return data.data;
+}
+
+export async function fetchCurrentWeather(lat = 11.94, lng = 108.45) {
+  const { data } = await api.get<{ code: string; data: import('../types/gis.types').PlotWeatherReport }>(
+    '/api/v1/gis/climate/weather/current',
+    { params: { lat, lng } },
+  );
+  return data.data;
+}
+
 export default api;
+

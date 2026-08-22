@@ -9,7 +9,7 @@ import { GpsWalkTools } from './GpsWalkTools';
 
 export type Basemap = 'satellite' | 'street' | 'topo';
 
-const DEFAULT_CENTER: [number, number] = [10.038, 105.805];
+const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
 const DEFAULT_ZOOM = 14;
 
 const BASEMAPS: Record<Basemap, { url: string; attribution: string; maxZoom: number }> =

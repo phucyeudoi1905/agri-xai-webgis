@@ -5,3 +5,8 @@ dist
 storage
 coverage
 docs/BA_extracted.txt
+docs/temp_extracted_docx/
+scripts/extract_docx.mjs
+scripts/parse_docx.js
+scripts/read_docx.ps1
+scripts/temp_read.py

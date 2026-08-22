@@ -93,14 +93,14 @@ li {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--scrollbar-thumb);
   border: 3px solid transparent;
   border-radius: var(--r-full);
   background-clip: content-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--scrollbar-thumb-hover);
   background-clip: content-box;
 }
 

@@ -7,7 +7,7 @@
 .public-trace {
   min-height: 100%;
   background:
-    radial-gradient(ellipse at top left, #ecfdf3 0%, transparent 50%),
+    radial-gradient(ellipse at top left, var(--brand-50) 0%, transparent 50%),
     var(--bg-app);
 }
 
@@ -18,8 +18,8 @@
   gap: 12px;
   padding: 16px 24px;
   border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
+  background: var(--bg-glass);
+  backdrop-filter: blur(10px);
 }
 
 .public-trace-body {

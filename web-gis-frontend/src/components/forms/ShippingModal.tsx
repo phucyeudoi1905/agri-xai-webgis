@@ -111,7 +111,7 @@ export function ShippingModal({ puc, onClose, onCreated }: Props) {
           id="destination"
           className="input"
           value={destination}
-          placeholder="Ví dụ: Nhà máy chế biến Sóc Trăng"
+          placeholder="Ví dụ: Chợ nông sản Đà Lạt / Siêu thị Co.opmart TP.HCM"
           onChange={(e) => setDestination(e.target.value)}
         />
       </div>

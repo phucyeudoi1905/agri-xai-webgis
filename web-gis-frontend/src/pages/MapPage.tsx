@@ -155,9 +155,39 @@ export function MapPage() {
     setSelectedPuc(puc);
   };
 
+  const totalAreaHa = useMemo(() => {
+    return features.reduce((acc, f) => acc + (f.properties.area_m2 || 0) / 10000, 0);
+  }, [features]);
+
   return (
     <div className={`map-page ${drawing ? 'map-drawing' : ''}`.trim()}>
-      <aside className="map-aside">
+      <div className="map-kpi-bar">
+        <div className="map-kpi-item">
+          <Icon name="sprout" size={15} />
+          <span className="map-kpi-label">Vùng canh tác:</span>
+          <span className="map-kpi-val">{features.length} lô đất</span>
+        </div>
+
+        <div className="map-kpi-item">
+          <Icon name="area" size={15} />
+          <span className="map-kpi-label">Tổng diện tích:</span>
+          <span className="map-kpi-val">{formatNumber(totalAreaHa, 2)} ha</span>
+        </div>
+
+        <div className="map-kpi-item">
+          <Icon name="cloud" size={15} />
+          <span className="map-kpi-label">Đà Lạt (Lâm Đồng):</span>
+          <span className="map-kpi-val">21°C · Mát mẻ</span>
+        </div>
+
+        <div className="map-kpi-item" style={{ marginLeft: 'auto' }}>
+          <span className="status-dot" />
+          <span className="map-kpi-label">Realtime GIS Engine</span>
+        </div>
+      </div>
+
+      <div className="map-page-body">
+        <aside className="map-aside">
         <div className="map-aside-head">
           <div className="search">
             <Icon name="search" size={15} />
@@ -349,6 +379,7 @@ export function MapPage() {
             onLogShipment={setShippingPuc}
           />
         )}
+      </div>
       </div>
 
       {cadastralOpen && !pendingBoundary && (

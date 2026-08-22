@@ -4,6 +4,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 import { AppShell } from './components/layout/AppShell';
 import { ToastProvider } from './components/ui/Toast';
+import { ThemeProvider } from './hooks/useTheme';
+import { AuthProvider } from './contexts/AuthContext';
 import { DashboardPage } from './pages/DashboardPage';
 import { MapPage } from './pages/MapPage';
 import { PlotsPage } from './pages/PlotsPage';
@@ -26,8 +28,13 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </StrictMode>,
 );
+

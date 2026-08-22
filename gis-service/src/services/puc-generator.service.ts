@@ -15,7 +15,7 @@ export class PucGeneratorService {
 
   /** Format: VN-[TỈNH]-[NĂM]-[######] e.g. VN-ST-2026-000123 */
   async generateNextPuc(): Promise<string> {
-    const province = this.config.get<string>('PUC_PROVINCE_CODE', 'ST');
+    const province = this.config.get<string>('PUC_PROVINCE_CODE', 'LD');
     const year = new Date().getFullYear();
 
     return this.dataSource.transaction(async (manager) => {

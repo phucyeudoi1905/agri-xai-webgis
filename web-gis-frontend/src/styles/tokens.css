@@ -1,61 +1,66 @@
 :root {
-  /* Surfaces */
-  --bg-app: #f5f7fa;
+  /* Surfaces (Light Mode) */
+  --bg-app: #f8fafc;
   --bg-surface: #ffffff;
-  --bg-subtle: #f8fafc;
-  --bg-hover: #f1f5f9;
-  --bg-inset: #eef2f7;
+  --bg-subtle: #f1f5f9;
+  --bg-hover: #e2e8f0;
+  --bg-inset: #e2e8f0;
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-glass-strong: rgba(255, 255, 255, 0.96);
 
   /* Text */
-  --text-strong: #0b1524;
-  --text: #1f2937;
-  --text-muted: #64748b;
-  --text-faint: #94a3b8;
+  --text-strong: #0c0a09;
+  --text: #1c1917;
+  --text-muted: #78716c;
+  --text-faint: #a8a29e;
   --text-inverse: #ffffff;
 
   /* Lines */
-  --border: #e4e9f0;
-  --border-strong: #cfd8e3;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
 
-  /* Brand */
-  --brand-50: #ecfdf3;
-  --brand-100: #d1fadf;
-  --brand-300: #6ce9a6;
-  --brand-500: #16a34a;
-  --brand-600: #128748;
-  --brand-700: #0d6b39;
+  /* Brand (Emerald AgriGIS) */
+  --brand-50: #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-300: #6ee7b7;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #047857;
 
-  /* Risk palette — chuẩn BA (không đổi) */
-  --risk-0: #2e7d32;
-  --risk-1: #f57f17;
-  --risk-2: #d32f2f;
-  --risk-0-soft: #e8f5e9;
-  --risk-1-soft: #fff8e1;
-  --risk-2-soft: #ffebee;
+  /* Risk palette */
+  --risk-0: #10b981;
+  --risk-1: #f59e0b;
+  --risk-2: #ef4444;
+  --risk-0-soft: #ecfdf5;
+  --risk-1-soft: #fef3c7;
+  --risk-2-soft: #fee2e2;
 
   /* Accents */
-  --info: #2563eb;
-  --info-soft: #eff6ff;
-  --violet: #7c3aed;
-  --violet-soft: #f5f3ff;
+  --info: #0ea5e9;
+  --info-soft: #e0f2fe;
+  --violet: #8b5cf6;
+  --violet-soft: #ede9fe;
+
+  /* Scrollbar */
+  --scrollbar-thumb: #d6d3d1;
+  --scrollbar-thumb-hover: #a8a29e;
 
   /* Radii */
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 20px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
   --r-full: 999px;
 
   /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12);
-  --shadow-pop: 0 20px 48px rgba(11, 21, 36, 0.18);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
+  --shadow-pop: 0 20px 48px rgba(0, 0, 0, 0.2);
 
   /* Layout */
-  --sidebar-w: 248px;
-  --topbar-h: 62px;
+  --topbar-h: 68px;
   --content-pad: 24px;
 
   /* Motion */
@@ -67,3 +72,60 @@
     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
+
+[data-theme='dark'] {
+  /* Surfaces (Stone-950 & Stone-900 như Ziinpv/AgriGIS-) */
+  --bg-app: #0c0a09;
+  --bg-surface: #1c1917;
+  --bg-subtle: #292524;
+  --bg-hover: #44403c;
+  --bg-inset: #141210;
+  --bg-glass: rgba(12, 10, 9, 0.9);
+  --bg-glass-strong: rgba(28, 25, 23, 0.95);
+
+  /* Text */
+  --text-strong: #fafaf9;
+  --text: #e7e5e4;
+  --text-muted: #a8a29e;
+  --text-faint: #78716c;
+  --text-inverse: #0c0a09;
+
+  /* Lines */
+  --border: #292524;
+  --border-strong: #44403c;
+
+  /* Brand (Emerald-500) */
+  --brand-50: rgba(16, 185, 129, 0.14);
+  --brand-100: rgba(16, 185, 129, 0.24);
+  --brand-300: #6ee7b7;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #34d399;
+
+  /* Risk palette */
+  --risk-0: #10b981;
+  --risk-1: #fbbf24;
+  --risk-2: #f87171;
+  --risk-0-soft: rgba(16, 185, 129, 0.16);
+  --risk-1-soft: rgba(251, 191, 36, 0.16);
+  --risk-2-soft: rgba(248, 113, 113, 0.16);
+
+  /* Accents */
+  --info: #38bdf8;
+  --info-soft: rgba(56, 189, 248, 0.14);
+  --violet: #a78bfa;
+  --violet-soft: rgba(167, 139, 250, 0.14);
+
+  /* Scrollbar */
+  --scrollbar-thumb: #44403c;
+  --scrollbar-thumb-hover: #57534e;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 20px 48px rgba(0, 0, 0, 0.8);
+}
+
+

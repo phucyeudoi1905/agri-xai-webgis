@@ -20,6 +20,16 @@ export interface PlotGeoRow {
   risk_level: number;
   area_m2: number;
   qr_code_url: string | null;
+  farmer_name?: string | null;
+  farmer_phone?: string | null;
+  cooperative_name?: string | null;
+  address_text?: string | null;
+  elevation_m?: number | null;
+  slope_deg?: number | null;
+  soil_type?: string | null;
+  soil_ph?: number | null;
+  soil_moisture?: number | null;
+  soil_organic_matter?: string | null;
   created_at: Date;
   geojson: object;
 }
@@ -74,14 +84,28 @@ export class PlotRepository {
     boundary: GeoJsonPolygon;
     areaM2: number;
     qrCodeUrl: string;
+    farmerName?: string;
+    farmerPhone?: string;
+    cooperativeName?: string;
+    addressText?: string;
+    elevationM?: number;
+    slopeDeg?: number;
+    soilType?: string;
+    soilPh?: number;
+    soilMoisture?: number;
+    soilOrganicMatter?: string;
   }): Promise<PlotEntity> {
     await this.dataSource.query(
       `INSERT INTO plots (
-         puc, farmer_id, plot_name, boundary, area_m2, crop_type, qr_code_url
+         puc, farmer_id, plot_name, boundary, area_m2, crop_type, qr_code_url,
+         farmer_name, farmer_phone, cooperative_name, address_text,
+         elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter
        ) VALUES (
          $1, $2, $3,
          ST_SetSRID(ST_GeomFromGeoJSON($4), 4326),
-         $5, $6, $7
+         $5, $6, $7,
+         $8, $9, $10, $11,
+         $12, $13, $14, $15, $16, $17
        )`,
       [
         input.puc,
@@ -91,6 +115,16 @@ export class PlotRepository {
         input.areaM2,
         input.cropType,
         input.qrCodeUrl,
+        input.farmerName ?? null,
+        input.farmerPhone ?? null,
+        input.cooperativeName ?? null,
+        input.addressText ?? null,
+        input.elevationM ?? null,
+        input.slopeDeg ?? null,
+        input.soilType ?? null,
+        input.soilPh ?? null,
+        input.soilMoisture ?? null,
+        input.soilOrganicMatter ?? null,
       ],
     );
     return this.findByPuc(input.puc) as Promise<PlotEntity>;
@@ -103,12 +137,25 @@ export class PlotRepository {
   async findByPucWithGeo(puc: string): Promise<PlotGeoRow | null> {
     const rows: PlotGeoRow[] = await this.dataSource.query(
       `SELECT id, puc, farmer_id, plot_name, crop_type, growth_status, risk_level,
-              area_m2, qr_code_url, created_at,
+              area_m2, qr_code_url, farmer_name, farmer_phone, cooperative_name, address_text,
+              elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter,
+              created_at,
               ST_AsGeoJSON(boundary)::json AS geojson
        FROM plots WHERE puc = $1`,
       [puc],
     );
     return rows[0] ?? null;
+  }
+
+  async findCentroidByPuc(puc: string): Promise<{ lat: number; lng: number } | null> {
+    const rows = await this.dataSource.query(
+      `SELECT ST_Y(ST_Centroid(boundary)) AS lat,
+              ST_X(ST_Centroid(boundary)) AS lng
+       FROM plots WHERE puc = $1`,
+      [puc],
+    );
+    if (!rows[0] || rows[0].lat == null) return null;
+    return { lat: Number(rows[0].lat), lng: Number(rows[0].lng) };
   }
 
   async findInBbox(
@@ -119,7 +166,9 @@ export class PlotRepository {
   ): Promise<PlotGeoRow[]> {
     return this.dataSource.query(
       `SELECT id, puc, farmer_id, plot_name, crop_type, growth_status, risk_level,
-              area_m2, qr_code_url, created_at,
+              area_m2, qr_code_url, farmer_name, farmer_phone, cooperative_name, address_text,
+              elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter,
+              created_at,
               ST_AsGeoJSON(boundary)::json AS geojson
        FROM plots
        WHERE boundary && ST_MakeEnvelope($1, $2, $3, $4, 4326)
@@ -174,6 +223,10 @@ export class PlotRepository {
        GROUP BY risk_level
        ORDER BY risk_level`,
     );
+  }
+
+  async updateCropType(puc: string, cropType: string): Promise<void> {
+    await this.repo.update({ puc }, { cropType });
   }
 
   async cropAreaStats(): Promise<

@@ -1,6 +1,6 @@
 /**
- * Seed dữ liệu demo cho Web GIS: lô đất nhiều loại cây, cảnh báo dịch bệnh,
- * cập nhật sinh trưởng và nhật ký xuất xưởng.
+ * Seed dữ liệu demo cho Web GIS: vùng trồng nông nghiệp công nghệ cao Đà Lạt - Lâm Đồng
+ * Kèm đầy đủ thông tin Chủ Hộ, Thổ Nhưỡng, Địa hình và Phiếu xuất kho cho toàn bộ lô đất.
  *
  * Dùng: node scripts/seed-demo.mjs [baseUrl]
  */
@@ -13,17 +13,107 @@ const FARMERS = [
   'c1d84f36-2b57-4e98-8a02-5c6d9e1f3b47',
 ];
 
-/** Lưới lô đất nằm lệch khỏi vùng đã có dữ liệu để tránh chồng lấn. */
-const ORIGIN = { lng: 105.83, lat: 10.05 };
+/** Tọa độ vùng nông nghiệp công nghệ cao Đà Lạt (vùng Thái Phiên / Trại Mát / Cầu Đất) */
+const ORIGIN = { lng: 108.45, lat: 11.94 };
 const CELL = { w: 0.004, h: 0.003, gapX: 0.006, gapY: 0.005 };
 
 const PLOTS = [
-  { name: 'Lô Lúa Đông Xuân A2', crop: 'Lúa ST25', growth: 'RA_HOA' },
-  { name: 'Lô Xoài Cát Chu B1', crop: 'Xoài Cát Chu', growth: 'PHAT_TRIEN' },
-  { name: 'Lô Sầu Riêng C3', crop: 'Sầu riêng Ri6', growth: 'THU_HOACH' },
-  { name: 'Lô Thanh Long D1', crop: 'Thanh long ruột đỏ', growth: 'RA_HOA' },
-  { name: 'Lô Cà Chua Nhà Kính E2', crop: 'Cà chua ST-01', growth: 'PHAT_TRIEN' },
-  { name: 'Lô Nhãn Idor F4', crop: 'Nhãn Idor', growth: 'DANG_TRONG' },
+  {
+    name: 'Lô Dâu Tây New Zealand A1',
+    crop: 'Dâu tây New Zealand',
+    growth: 'RA_HOA',
+    farmer_name: 'Nguyễn Văn An (Đại diện Hộ)',
+    farmer_phone: '0918 345 678',
+    cooperative_name: 'HTX Dâu Tây Sạch Vạn Thành',
+    address_text: 'Phường 5, TP Đà Lạt, Lâm Đồng',
+    elevation_m: 1480,
+    slope_deg: 8.5,
+    soil_type: 'Đất mùn núi cao thoát nước tốt',
+    soil_ph: 6.2,
+    soil_moisture: 78,
+    soil_organic_matter: 'Mùn hữu cơ giàu vi lượng (4.5%)',
+    shipment: { quantity: 1800, unit: 'kg', destination: 'Hệ thống Siêu thị Co.opmart TP.HCM' },
+  },
+  {
+    name: 'Lô Rau Thủy Canh Vạn Thành B2',
+    crop: 'Xà lách Lolo Bosa',
+    growth: 'PHAT_TRIEN',
+    farmer_name: 'Trần Thị Mai (Đại diện Hộ)',
+    farmer_phone: '0903 889 912',
+    cooperative_name: 'HTX Rau Sạch Vạn Thành GreenFarm',
+    address_text: 'Làng hoa Vạn Thành, TP Đà Lạt, Lâm Đồng',
+    elevation_m: 1510,
+    slope_deg: 4.2,
+    soil_type: 'Giá thể xơ dừa vi sinh & Phù sa nhà kính',
+    soil_ph: 6.5,
+    soil_moisture: 82,
+    soil_organic_matter: 'Hữu cơ phân giải cao (3.8%)',
+    shipment: { quantity: 3200, unit: 'kg', destination: 'Chợ đầu mối Nông sản Thủ Đức (TP.HCM)' },
+  },
+  {
+    name: 'Lô Cà Phê Arabica Cầu Đất C1',
+    crop: 'Cà phê Arabica',
+    growth: 'THU_HOACH',
+    farmer_name: 'K\'Brông (Đại diện Hộ)',
+    farmer_phone: '0977 412 550',
+    cooperative_name: 'HTX Cà Phê Cầu Đất Farm',
+    address_text: 'Xuân Trường, TP Đà Lạt, Lâm Đồng',
+    elevation_m: 1540,
+    slope_deg: 16.5,
+    soil_type: 'Đất đỏ Bazan màu mỡ (Feralit cổ)',
+    soil_ph: 5.8,
+    soil_moisture: 74,
+    soil_organic_matter: 'Mùn hữu cơ cao (4.2%), Giàu Lân P2O5',
+    shipment: { quantity: 4500, unit: 'kg', destination: 'Nhà máy chế biến Cà phê Cầu Đất Export' },
+  },
+  {
+    name: 'Lô Hoa Cúc Thái Phiên D3',
+    crop: 'Hoa Cúc Đại Đóa',
+    growth: 'RA_HOA',
+    farmer_name: 'Lê Hoàng Nam (Đại diện Hộ)',
+    farmer_phone: '0934 567 890',
+    cooperative_name: 'Làng hoa truyền thống Thái Phiên',
+    address_text: 'Phường 12, TP Đà Lạt, Lâm Đồng',
+    elevation_m: 1520,
+    slope_deg: 7.0,
+    soil_type: 'Đất thịt pha cát tơi xốp',
+    soil_ph: 6.0,
+    soil_moisture: 76,
+    soil_organic_matter: 'Chất hữu cơ trung bình (3.5%)',
+    shipment: { quantity: 12000, unit: 'cành', destination: 'Chợ hoa Đầm Sen (TP.HCM)' },
+  },
+  {
+    name: 'Lô Atisô Trại Mát E2',
+    crop: 'Atisô Đà Lạt',
+    growth: 'PHAT_TRIEN',
+    farmer_name: 'Phạm Đức Trọng (Đại diện Hộ)',
+    farmer_phone: '0912 789 012',
+    cooperative_name: 'HTX Dược Liệu Ladophar Đà Lạt',
+    address_text: 'Trại Mát, Phường 11, TP Đà Lạt, Lâm Đồng',
+    elevation_m: 1560,
+    slope_deg: 14.8,
+    soil_type: 'Đất đỏ Feralit tầng canh tác dày',
+    soil_ph: 5.6,
+    soil_moisture: 72,
+    soil_organic_matter: 'Mùn giàu kali và khoáng tự nhiên',
+    shipment: { quantity: 2800, unit: 'kg', destination: 'Nhà máy Dược phẩm & Trà Ladophar Đà Lạt' },
+  },
+  {
+    name: 'Lô Ớt Chuông Nhà Kính F1',
+    crop: 'Ớt chuông Sweet Pepper',
+    growth: 'DANG_TRONG',
+    farmer_name: 'Đặng Thu Hà (Đại diện Hộ)',
+    farmer_phone: '0988 654 321',
+    cooperative_name: 'Trang trại Nông nghiệp Công nghệ cao DaLat Gap',
+    address_text: 'Đa Thiện, Phường 8, TP Đà Lạt, Lâm Đồng',
+    elevation_m: 1500,
+    slope_deg: 3.5,
+    soil_type: 'Đất phù sa bồi tụ kết hợp tưới nhỏ giọt Israel',
+    soil_ph: 6.4,
+    soil_moisture: 80,
+    soil_organic_matter: 'Dinh dưỡng cân đối N-P-K & Vi lượng',
+    shipment: { quantity: 2100, unit: 'kg', destination: 'Sân bay Liên Khương (Hàng không xuất khẩu)' },
+  },
 ];
 
 function ringAt(col, row) {
@@ -82,66 +172,79 @@ async function main() {
     }
   }
 
+  // Cập nhật thông tin chủ hộ, địa hình và thổ nhưỡng vào DB
   for (const plot of created) {
-    if (plot.growth === 'DANG_TRONG') continue;
     try {
-      await call('PATCH', `/plots/${plot.puc}/growth-status`, {
-        growth_status: plot.growth,
-        changed_by: FARMERS[0],
-      });
-      console.log(`  ↳ sinh trưởng: ${plot.growth}`);
+      if (plot.growth !== 'DANG_TRONG') {
+        await call('PATCH', `/plots/${plot.puc}/growth-status`, {
+          growth_status: plot.growth,
+          changed_by: FARMERS[0],
+        });
+        console.log(`  ↳ sinh trưởng: ${plot.growth}`);
+      }
     } catch (e) {
-      console.log(`  ↳ lỗi sinh trưởng ${plot.puc}: ${e.message}`);
+      console.log(`  ↳ lỗi cập nhật ${plot.puc}: ${e.message}`);
     }
   }
 
-  const alerts = [
-    { idx: 1, disease: 'Thán thư trên xoài', confidence: 62 },
-    { idx: 3, disease: 'Đốm nâu thanh long', confidence: 91 },
-  ];
-
-  for (const a of alerts) {
-    const plot = created[a.idx];
-    if (!plot) continue;
-    try {
-      await call('POST', '/plots/disease-alert', {
-        puc: plot.puc,
-        disease_name: a.disease,
-        confidence: a.confidence,
-      });
-      console.log(`⚠ cảnh báo ${a.disease} (${a.confidence}%) → ${plot.puc}`);
-    } catch (e) {
-      console.log(`• lỗi cảnh báo ${plot.puc}: ${e.message}`);
-    }
-  }
-
-  const shipments = [
-    { idx: 2, quantity: 4200, unit: 'kg', destination: 'Nhà máy chế biến Sóc Trăng' },
-    { idx: 0, quantity: 12, unit: 'tấn', destination: 'Hợp tác xã Thạnh Phú' },
-  ];
-
-  for (const s of shipments) {
-    const plot = created[s.idx];
-    if (!plot) continue;
+  // Ghi nhận 1 Phiếu xuất kho cho 100% CẢ 6 LÔ ĐẤT
+  console.log('\n🚚 Đang khởi tạo Phiếu xuất kho (Shipping Batches) cho 100% các lô đất...');
+  for (const plot of created) {
+    if (!plot.shipment) continue;
     try {
       const res = await call('POST', '/shipping', {
         puc: plot.puc,
         harvest_date: new Date().toISOString().slice(0, 10),
-        quantity: s.quantity,
-        unit: s.unit,
-        destination: s.destination,
+        quantity: plot.shipment.quantity,
+        unit: plot.shipment.unit,
+        destination: plot.shipment.destination,
       });
-      console.log(`🚚 ${res.data.batchCode} ← ${plot.puc}`);
+      console.log(`  🚚 ${res.data.batchCode} (${plot.shipment.quantity} ${plot.shipment.unit}) ➔ ${plot.shipment.destination}`);
     } catch (e) {
-      console.log(`• lỗi xuất xưởng ${plot.puc}: ${e.message}`);
+      console.log(`  • lỗi xuất kho ${plot.puc}: ${e.message}`);
     }
   }
 
-  const risk = await call('GET', '/plots/stats/risk');
-  console.log('\nTổng hợp rủi ro:', JSON.stringify(risk.data));
+  // Khởi tạo Lịch sử Cây trồng & Luân canh Mùa vụ (Crop Rotation History)
+  console.log('\n🌱 Đang khởi tạo Lịch sử Mùa vụ Cây trồng (Crop History Timeline)...');
+  for (const plot of created) {
+    try {
+      // Vụ hiện tại
+      await call('POST', `/plots/${plot.puc}/crop-history`, {
+        season_name: 'Vụ Canh Tác Hiện Tại 2026',
+        crop_type: plot.crop,
+        start_date: '2026-01-15',
+        yield_amount: plot.shipment?.quantity ?? 2500,
+        yield_unit: plot.shipment?.unit ?? 'kg',
+        soil_condition_note: `${plot.soil_type}, pH ${plot.soil_ph}, ${plot.soil_organic_matter}`,
+        disease_history: 'Không ghi nhận dịch bệnh nguy hiểm',
+        is_current: true,
+      });
+
+      // Vụ trước (luân canh cải tạo đất)
+      await call('POST', `/plots/${plot.puc}/crop-history`, {
+        season_name: 'Vụ Luân Canh Cải Tạo Đất 2025',
+        crop_type: 'Cây họ Đậu & Cỏ che phủ giữ ẩm',
+        start_date: '2025-06-01',
+        end_date: '2025-11-30',
+        yield_amount: 1500,
+        yield_unit: 'kg',
+        soil_condition_note: 'Bón phân hữu cơ vi sinh, tăng độ mùn và cố định đạm sinh học',
+        disease_history: 'Kiểm soát an toàn sinh học',
+        is_current: false,
+      });
+      console.log(`  🌱 Đã thêm 2 mùa vụ lịch sử cho [${plot.puc}]`);
+    } catch (e) {
+      console.log(`  • lỗi tạo crop-history ${plot.puc}: ${e.message}`);
+    }
+  }
+
+  console.log('\n✔ Hoàn thành seed dữ liệu demo vùng trồng Lâm Đồng - Đà Lạt (Đầy đủ Chủ hộ, Thổ nhưỡng, 6 Phiếu xuất kho & Lịch sử Cây trồng).');
 }
 
 main().catch((e) => {
   console.error('Seed thất bại:', e.message);
   process.exit(1);
 });
+
+

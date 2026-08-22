@@ -23,6 +23,16 @@ export interface PlotProperties {
   risk_color: string;
   area_m2: number;
   qr_code_url?: string | null;
+  farmer_name?: string | null;
+  farmer_phone?: string | null;
+  cooperative_name?: string | null;
+  address_text?: string | null;
+  elevation_m?: number | null;
+  slope_deg?: number | null;
+  soil_type?: string | null;
+  soil_ph?: number | null;
+  soil_moisture?: number | null;
+  soil_organic_matter?: string | null;
   created_at?: string;
 }
 
@@ -37,6 +47,31 @@ export interface PlotFeatureCollection {
   features: PlotFeature[];
 }
 
+export interface PlotCropHistory {
+  id: string;
+  puc: string;
+  season_name?: string;
+  seasonName?: string;
+  crop_type?: string;
+  cropType?: string;
+  start_date?: string;
+  startDate?: string;
+  end_date?: string | null;
+  endDate?: string | null;
+  yield_amount?: number | null;
+  yieldAmount?: number | null;
+  yield_unit?: string | null;
+  yieldUnit?: string | null;
+  soil_condition_note?: string | null;
+  soilConditionNote?: string | null;
+  disease_history?: string | null;
+  diseaseHistory?: string | null;
+  is_current?: boolean;
+  isCurrent?: boolean;
+  created_at?: string;
+  createdAt?: string;
+}
+
 export interface PlotDetail {
   id: string;
   puc: string;
@@ -49,6 +84,16 @@ export interface PlotDetail {
   area_m2: number;
   area_ha: number;
   qr_code_url: string | null;
+  farmer_name?: string | null;
+  farmer_phone?: string | null;
+  cooperative_name?: string | null;
+  address_text?: string | null;
+  elevation_m?: number | null;
+  slope_deg?: number | null;
+  soil_type?: string | null;
+  soil_ph?: number | null;
+  soil_moisture?: number | null;
+  soil_organic_matter?: string | null;
   boundary: GeoJsonPolygon;
   created_at: string;
   alerts: Array<{
@@ -74,6 +119,7 @@ export interface PlotDetail {
     changedBy: string | null;
     changedAt: string;
   }>;
+  crop_history?: PlotCropHistory[];
 }
 
 export interface RiskSummaryRow {
@@ -97,3 +143,50 @@ export const RISK_COLORS: Record<RiskLevel, string> = {
   1: '#F57F17',
   2: '#D32F2F',
 };
+
+export interface CurrentWeather {
+  temperature: number;
+  apparentTemperature: number;
+  humidity: number;
+  precipitation: number;
+  rain: number;
+  windSpeed: number;
+  windDirection: number;
+  pressure: number;
+  weatherCode: number;
+  condition: string;
+  icon: string;
+  isDay: boolean;
+  time: string;
+}
+
+export interface DailyForecast {
+  date: string;
+  weatherCode: number;
+  condition: string;
+  icon: string;
+  tempMax: number;
+  tempMin: number;
+  precipitationSum: number;
+  precipitationProbability: number;
+  windSpeedMax: number;
+}
+
+export interface IotClimateReading {
+  temperatureC: number;
+  humidityPct: number;
+  sensorId: string | null;
+  recordedAt: string;
+}
+
+export interface PlotWeatherReport {
+  puc?: string;
+  plotName?: string;
+  cropType?: string;
+  location: { lat: number; lng: number };
+  current: CurrentWeather;
+  daily: DailyForecast[];
+  agriAdvice: string;
+  iotReading?: IotClimateReading | null;
+}
+

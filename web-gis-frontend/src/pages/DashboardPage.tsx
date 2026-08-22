@@ -2,11 +2,12 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarList } from '../components/charts/BarList';
 import { DonutChart, type DonutSlice } from '../components/charts/DonutChart';
-import { GrowthBadge, RiskBadge } from '../components/ui/Badge';
+import { GrowthBadge } from '../components/ui/Badge';
 import { Card, CardBody, CardHead } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Icon } from '../components/ui/Icon';
 import { StatCard } from '../components/ui/StatCard';
+import { WeatherCard } from '../components/ui/WeatherCard';
 import { useAllPlots } from '../hooks/usePlotData';
 import { useStats } from '../hooks/useStats';
 import { formatArea, formatNumber, relativeTime } from '../lib/format';
@@ -15,7 +16,7 @@ import { GROWTH_ORDER, GROWTH_META, RISK_META } from '../lib/gis';
 export function DashboardPage() {
   const navigate = useNavigate();
   const stats = useStats();
-  const { features, loading: plotsLoading, reload: reloadPlots } = useAllPlots();
+  const { features, reload: reloadPlots } = useAllPlots();
 
   const riskSlices = useMemo<DonutSlice[]>(
     () =>
@@ -48,16 +49,6 @@ export function DashboardPage() {
       value: counts.get(s) ?? 0,
     }));
   }, [features]);
-
-  const attention = useMemo(
-    () =>
-      features
-        .filter((f) => f.properties.risk_level > 0)
-        .sort((a, b) => b.properties.risk_level - a.properties.risk_level)
-        .slice(0, 6),
-    [features],
-  );
-
   const recent = useMemo(
     () =>
       [...features]
@@ -70,8 +61,6 @@ export function DashboardPage() {
     [features],
   );
 
-  const highRisk = Number(stats.byLevel(2)?.total_plots ?? 0);
-  const warning = Number(stats.byLevel(1)?.total_plots ?? 0);
 
   if (stats.error) {
     return (
@@ -101,7 +90,7 @@ export function DashboardPage() {
 
   return (
     <div className="page-narrow stack">
-      <div className="grid grid-4">
+      <div className="grid grid-2">
         <StatCard
           label="Tổng lô đất"
           value={formatNumber(stats.totalPlots)}
@@ -119,23 +108,9 @@ export function DashboardPage() {
           tone="info"
           loading={stats.loading}
         />
-        <StatCard
-          label="Cảnh báo nhẹ"
-          value={formatNumber(warning)}
-          hint="Cần theo dõi thêm"
-          icon="shield"
-          tone="risk1"
-          loading={stats.loading}
-        />
-        <StatCard
-          label="Nguy cơ cao"
-          value={formatNumber(highRisk)}
-          hint={highRisk > 0 ? 'Cần xử lý ngay' : 'Không có lô nguy cơ'}
-          icon="alert"
-          tone={highRisk > 0 ? 'risk2' : 'risk0'}
-          loading={stats.loading}
-        />
       </div>
+
+      <WeatherCard title="Thời tiết & Vi khí hậu toàn vùng trồng (Lâm Đồng - Đà Lạt)" />
 
       <div className="grid grid-sidebar">
         <Card>
@@ -197,71 +172,6 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-sidebar">
-        <Card>
-          <CardHead
-            title="Lô đất cần xử lý"
-            subtitle="Ưu tiên theo mức rủi ro do Nhóm 3 đẩy về"
-            actions={
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => navigate('/plots')}
-              >
-                Xem tất cả
-                <Icon name="chevron-right" size={14} />
-              </button>
-            }
-          />
-          <div className="card-body card-body-flush">
-            {plotsLoading ? (
-              <div className="card-body stack">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="skeleton" style={{ height: 22 }} />
-                ))}
-              </div>
-            ) : attention.length === 0 ? (
-              <EmptyState
-                icon="shield"
-                title="Toàn bộ vùng trồng an toàn"
-                description="Không có lô đất nào ở mức cảnh báo hoặc nguy cơ cao."
-              />
-            ) : (
-              <div className="table-wrap">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Lô đất</th>
-                      <th>Mã PUC</th>
-                      <th>Rủi ro</th>
-                      <th className="align-right">Diện tích</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attention.map((f) => (
-                      <tr
-                        key={f.properties.puc}
-                        className="clickable"
-                        onClick={() =>
-                          navigate(`/trace?puc=${encodeURIComponent(f.properties.puc)}`)
-                        }
-                      >
-                        <td className="cell-strong">{f.properties.plot_name}</td>
-                        <td className="mono muted">{f.properties.puc}</td>
-                        <td>
-                          <RiskBadge level={f.properties.risk_level} />
-                        </td>
-                        <td className="align-right">
-                          {formatNumber(f.properties.area_m2 / 10000, 2)} ha
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </Card>
-
         <div className="stack">
           <Card>
             <CardHead

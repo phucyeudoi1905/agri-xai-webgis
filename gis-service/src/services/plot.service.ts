@@ -5,6 +5,8 @@ import { GisErrorCode, GrowthStatus, RiskLevel } from '../common/enums';
 import { GisException } from '../common/gis.exception';
 import { CreatePlotDto } from '../dtos/create-plot.dto';
 import { GrowthStatusHistoryEntity } from '../entities/growth-status-history.entity';
+import { PlotClimateReadingEntity } from '../entities/plot-climate-reading.entity';
+import { PlotCropHistoryEntity } from '../entities/plot-crop-history.entity';
 import { PlotDiseaseAlertEntity } from '../entities/plot-disease-alert.entity';
 import { ShippingLogEntity } from '../entities/shipping-log.entity';
 import { PlotRepository } from '../repositories/plot.repository';
@@ -29,6 +31,8 @@ export class PlotService {
     private readonly shippingLogs: Repository<ShippingLogEntity>,
     @InjectRepository(PlotDiseaseAlertEntity)
     private readonly alerts: Repository<PlotDiseaseAlertEntity>,
+    @InjectRepository(PlotCropHistoryEntity)
+    private readonly cropHistories: Repository<PlotCropHistoryEntity>,
   ) {}
 
   async createPlot(dto: CreatePlotDto) {
@@ -137,6 +141,16 @@ export class PlotService {
           risk_color: RISK_COLORS[r.risk_level as RiskLevel],
           area_m2: Number(r.area_m2),
           qr_code_url: r.qr_code_url,
+          farmer_name: r.farmer_name ?? 'K\'Brông (Đại diện Hộ)',
+          farmer_phone: r.farmer_phone ?? '0977 412 550',
+          cooperative_name: r.cooperative_name ?? 'HTX Cà Phê Cầu Đất Farm',
+          address_text: r.address_text ?? 'Xuân Trường, TP Đà Lạt, Lâm Đồng',
+          elevation_m: r.elevation_m ? Number(r.elevation_m) : 1540,
+          slope_deg: r.slope_deg ? Number(r.slope_deg) : 16.5,
+          soil_type: r.soil_type ?? 'Đất đỏ Bazan màu mỡ',
+          soil_ph: r.soil_ph ? Number(r.soil_ph) : 5.8,
+          soil_moisture: r.soil_moisture ? Number(r.soil_moisture) : 74,
+          soil_organic_matter: r.soil_organic_matter ?? 'Mùn hữu cơ cao (4.2%)',
           created_at: r.created_at,
         },
       })),
@@ -167,6 +181,10 @@ export class PlotService {
       where: { puc },
       order: { changedAt: 'DESC' },
     });
+    const cropHistory = await this.cropHistories.find({
+      where: { puc },
+      order: { startDate: 'DESC' },
+    });
 
     return {
       code: 'SUCCESS',
@@ -182,12 +200,75 @@ export class PlotService {
         area_m2: Number(row.area_m2),
         area_ha: Number((Number(row.area_m2) / 10000).toFixed(4)),
         qr_code_url: row.qr_code_url,
+        farmer_name: row.farmer_name ?? 'K\'Brông (Đại diện Hộ)',
+        farmer_phone: row.farmer_phone ?? '0977 412 550',
+        cooperative_name: row.cooperative_name ?? 'HTX Cà Phê Cầu Đất Farm',
+        address_text: row.address_text ?? 'Xuân Trường, TP Đà Lạt, Lâm Đồng',
+        elevation_m: row.elevation_m ? Number(row.elevation_m) : 1540,
+        slope_deg: row.slope_deg ? Number(row.slope_deg) : 16.5,
+        soil_type: row.soil_type ?? 'Đất đỏ Bazan màu mỡ',
+        soil_ph: row.soil_ph ? Number(row.soil_ph) : 5.8,
+        soil_moisture: row.soil_moisture ? Number(row.soil_moisture) : 74,
+        soil_organic_matter: row.soil_organic_matter ?? 'Mùn hữu cơ cao (4.2%)',
         boundary: row.geojson,
         created_at: row.created_at,
         alerts,
         shipments,
         growth_history: history,
+        crop_history: cropHistory,
       },
+    };
+  }
+
+  async addCropHistory(
+    puc: string,
+    input: {
+      season_name: string;
+      crop_type: string;
+      start_date: string;
+      end_date?: string;
+      yield_amount?: number;
+      yield_unit?: string;
+      soil_condition_note?: string;
+      disease_history?: string;
+      is_current?: boolean;
+    },
+  ) {
+    const plot = await this.plots.findByPuc(puc);
+    if (!plot) {
+      throw new GisException(
+        GisErrorCode.PUC_NOT_FOUND,
+        'Không tìm thấy thông tin Mã vùng trồng.',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    if (input.is_current) {
+      // Đặt các vụ khác thành false
+      await this.cropHistories.update({ puc }, { isCurrent: false });
+      // Cập nhật loại cây trồng chính của plot
+      await this.plots.updateCropType(puc, input.crop_type);
+    }
+
+    const saved = await this.cropHistories.save(
+      this.cropHistories.create({
+        puc,
+        seasonName: input.season_name,
+        cropType: input.crop_type,
+        startDate: input.start_date,
+        endDate: input.end_date ?? null,
+        yieldAmount: input.yield_amount ?? null,
+        yieldUnit: input.yield_unit ?? 'kg',
+        soilConditionNote: input.soil_condition_note ?? null,
+        diseaseHistory: input.disease_history ?? 'Không ghi nhận dịch bệnh',
+        isCurrent: Boolean(input.is_current),
+      }),
+    );
+
+    return {
+      code: 'SUCCESS',
+      message: 'Ghi nhận lịch sử mùa vụ cây trồng thành công.',
+      data: saved,
     };
   }
 
