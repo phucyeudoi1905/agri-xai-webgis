@@ -3,14 +3,24 @@ import { MapContainer, TileLayer, useMap, ZoomControl } from 'react-leaflet';
 import L, { type Map as LeafletMap } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { GeoJsonPolygon, PlotFeature } from '../../types/gis.types';
+import {
+  LAM_DONG_DEFAULT_CENTER,
+  LAM_DONG_DEFAULT_ZOOM,
+  LAM_DONG_MAX_BOUNDS,
+  LAM_DONG_MIN_ZOOM,
+} from '../../lib/lamDongMapConfig';
 import { PlotLayer } from './PlotLayer';
 import { PolygonDrawTools } from './PolygonDrawTools';
 import { GpsWalkTools } from './GpsWalkTools';
 
 export type Basemap = 'satellite' | 'street' | 'topo';
 
-const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
-const DEFAULT_ZOOM = 14;
+export {
+  LAM_DONG_MAX_BOUNDS,
+  LAM_DONG_MIN_ZOOM,
+  LAM_DONG_DEFAULT_CENTER,
+  LAM_DONG_DEFAULT_ZOOM,
+} from '../../lib/lamDongMapConfig';
 
 const BASEMAPS: Record<Basemap, { url: string; attribution: string; maxZoom: number }> =
   {
@@ -103,8 +113,11 @@ export function GISMap({
 
   return (
     <MapContainer
-      center={DEFAULT_CENTER}
-      zoom={DEFAULT_ZOOM}
+      center={LAM_DONG_DEFAULT_CENTER}
+      zoom={LAM_DONG_DEFAULT_ZOOM}
+      minZoom={LAM_DONG_MIN_ZOOM}
+      maxBounds={LAM_DONG_MAX_BOUNDS}
+      maxBoundsViscosity={1}
       className="map-canvas"
       zoomControl={false}
       preferCanvas
@@ -115,7 +128,9 @@ export function GISMap({
         key={basemap}
         url={tiles.url}
         attribution={tiles.attribution}
+        minZoom={LAM_DONG_MIN_ZOOM}
         maxZoom={tiles.maxZoom}
+        bounds={L.latLngBounds(LAM_DONG_MAX_BOUNDS[0], LAM_DONG_MAX_BOUNDS[1])}
       />
       <PlotLayer
         features={features}

@@ -30,6 +30,9 @@ export interface PlotGeoRow {
   soil_ph?: number | null;
   soil_moisture?: number | null;
   soil_organic_matter?: string | null;
+  farmer_code?: string | null;
+  cropping_pattern?: string | null;
+  crop_types?: string | null;
   created_at: Date;
   geojson: object;
 }
@@ -88,6 +91,9 @@ export class PlotRepository {
     farmerPhone?: string;
     cooperativeName?: string;
     addressText?: string;
+    farmerCode?: string;
+    croppingPattern?: string;
+    cropTypes?: string;
     elevationM?: number;
     slopeDeg?: number;
     soilType?: string;
@@ -99,13 +105,15 @@ export class PlotRepository {
       `INSERT INTO plots (
          puc, farmer_id, plot_name, boundary, area_m2, crop_type, qr_code_url,
          farmer_name, farmer_phone, cooperative_name, address_text,
-         elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter
+         elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter,
+         farmer_code, cropping_pattern, crop_types
        ) VALUES (
          $1, $2, $3,
          ST_SetSRID(ST_GeomFromGeoJSON($4), 4326),
          $5, $6, $7,
          $8, $9, $10, $11,
-         $12, $13, $14, $15, $16, $17
+         $12, $13, $14, $15, $16, $17,
+         $18, $19, $20
        )`,
       [
         input.puc,
@@ -125,6 +133,9 @@ export class PlotRepository {
         input.soilPh ?? null,
         input.soilMoisture ?? null,
         input.soilOrganicMatter ?? null,
+        input.farmerCode ?? null,
+        input.croppingPattern ?? 'DON_CAY',
+        input.cropTypes ?? null,
       ],
     );
     return this.findByPuc(input.puc) as Promise<PlotEntity>;
@@ -139,6 +150,7 @@ export class PlotRepository {
       `SELECT id, puc, farmer_id, plot_name, crop_type, growth_status, risk_level,
               area_m2, qr_code_url, farmer_name, farmer_phone, cooperative_name, address_text,
               elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter,
+              farmer_code, cropping_pattern, crop_types,
               created_at,
               ST_AsGeoJSON(boundary)::json AS geojson
        FROM plots WHERE puc = $1`,
@@ -168,6 +180,7 @@ export class PlotRepository {
       `SELECT id, puc, farmer_id, plot_name, crop_type, growth_status, risk_level,
               area_m2, qr_code_url, farmer_name, farmer_phone, cooperative_name, address_text,
               elevation_m, slope_deg, soil_type, soil_ph, soil_moisture, soil_organic_matter,
+              farmer_code, cropping_pattern, crop_types,
               created_at,
               ST_AsGeoJSON(boundary)::json AS geojson
        FROM plots

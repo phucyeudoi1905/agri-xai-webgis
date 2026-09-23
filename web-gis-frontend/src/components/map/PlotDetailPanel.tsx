@@ -7,6 +7,7 @@ import {
   growthLabel,
 } from '../../lib/gis';
 import { updateGrowthStatus, plotReportPdfUrl } from '../../services/gisApi';
+import { useAuth } from '../../contexts/AuthContext';
 import { EmptyState } from '../ui/EmptyState';
 import { Icon } from '../ui/Icon';
 import { useToast } from '../ui/toastContext';
@@ -25,9 +26,12 @@ const MIN_WIDTH = 340;
 
 export function PlotDetailPanel({ puc, onClose, onChanged, onLogShipment }: Props) {
   const { detail, loading, error, reload } = usePlotDetail(puc);
+  const { can, isAdmin } = useAuth();
   const toast = useToast();
   const [growth, setGrowth] = useState('');
   const [saving, setSaving] = useState(false);
+  const canShip = Boolean(onLogShipment) && can('createBatch');
+  const canEditGrowth = can('updateGrowth');
 
   // Quản lý kích thước kéo rộng/hẹp
   const [width, setWidth] = useState<number>(() => {
@@ -187,6 +191,7 @@ export function PlotDetailPanel({ puc, onClose, onChanged, onLogShipment }: Prop
                     {detail.farmer_name || "K'Brông (Đại diện Hộ)"}
                   </span>
                   <span className="farmer-coop-text">
+                    {detail.farmer_code ? `${detail.farmer_code} · ` : ''}
                     {detail.cooperative_name || 'HTX Cà Phê Cầu Đất Farm'}
                   </span>
                 </div>
@@ -292,28 +297,34 @@ export function PlotDetailPanel({ puc, onClose, onChanged, onLogShipment }: Prop
             />
 
             <section className="detail-section">
-              <h3>Cập nhật sinh trưởng</h3>
-              <div className="row">
-                <select
-                  className="select"
-                  value={growth}
-                  onChange={(e) => setGrowth(e.target.value)}
-                >
-                  {GROWTH_ORDER.map((s) => (
-                    <option key={s} value={s}>
-                      {GROWTH_META[s].label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  disabled={saving || growth === detail.growth_status}
-                  onClick={() => void saveGrowth()}
-                >
-                  {saving ? <span className="spinner" /> : 'Lưu'}
-                </button>
-              </div>
+              <h3>{isAdmin ? 'Giám sát sinh trưởng' : 'Cập nhật sinh trưởng'}</h3>
+              {canEditGrowth ? (
+                <div className="row">
+                  <select
+                    className="select"
+                    value={growth}
+                    onChange={(e) => setGrowth(e.target.value)}
+                  >
+                    {GROWTH_ORDER.map((s) => (
+                      <option key={s} value={s}>
+                        {GROWTH_META[s].label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={saving || growth === detail.growth_status}
+                    onClick={() => void saveGrowth()}
+                  >
+                    {saving ? <span className="spinner" /> : 'Lưu'}
+                  </button>
+                </div>
+              ) : (
+                <p className="muted" style={{ fontSize: 12.5 }}>
+                  {GROWTH_META[detail.growth_status]?.label ?? detail.growth_status}
+                </p>
+              )}
             </section>
 
             {detail.qr_code_url && (
@@ -349,17 +360,22 @@ export function PlotDetailPanel({ puc, onClose, onChanged, onLogShipment }: Prop
                 <h3 style={{ margin: 0 }}>
                   Xuất xưởng ({detail.shipments?.length ?? 0})
                 </h3>
-                {onLogShipment && (
+                {canShip && (
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
-                    onClick={() => onLogShipment(detail.puc)}
+                    onClick={() => onLogShipment?.(detail.puc)}
                   >
                     <Icon name="plus" size={14} />
-                    Ghi nhận
+                    Lập phiếu BATCH
                   </button>
                 )}
               </div>
+              {!canShip && (
+                <p className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+                  Portal Admin chỉ giám sát chuỗi — phiếu BATCH do HTX tạo.
+                </p>
+              )}
               {!detail.shipments || detail.shipments.length === 0 ? (
                 <p className="muted" style={{ fontSize: 12.5 }}>
                   Chưa có lô hàng nào được ghi nhận.

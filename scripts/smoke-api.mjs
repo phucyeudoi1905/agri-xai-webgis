@@ -5,11 +5,15 @@
 const BASE = process.argv[2] ?? 'http://localhost:4000';
 const API_KEY = process.argv[3] ?? process.env.API_KEY ?? '';
 const API = `${BASE}/api/v1/gis`;
+const AUTH_USER = process.env.SMOKE_USER ?? 'admin_gis';
+const AUTH_PASS = process.env.SMOKE_PASS ?? 'AgriAdmin@2026';
+let accessToken = '';
 
 function headers(json = true) {
   const h = {};
   if (json) h['Content-Type'] = 'application/json';
   if (API_KEY) h['X-API-Key'] = API_KEY;
+  if (accessToken) h['Authorization'] = `Bearer ${accessToken}`;
   return h;
 }
 
@@ -47,12 +51,29 @@ async function main() {
   console.log('health', health);
   if (health.db !== 'up') throw new Error('DB not ready');
 
-  const farmer = 'a3b8e912-4c5d-6e7f-8a9b-0c1d2e3f4a5b';
+  const login = await fetch(`${BASE}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: AUTH_USER, password: AUTH_PASS }),
+  });
+  const loginBody = await login.json();
+  if (!login.ok) throw new Error(`login failed: ${JSON.stringify(loginBody)}`);
+  accessToken = loginBody.data.access_token;
+  console.log('login', loginBody.data.user.username, loginBody.data.user.role);
+
+  const farmerLookup = await call('GET', `${BASE}/api/v1/gis/farmers/ND-LD-0001`);
+  if (!farmerLookup.ok) {
+    throw new Error(`farmer lookup failed: ${JSON.stringify(farmerLookup.payload)}`);
+  }
+  console.log('farmer', farmerLookup.payload.data.full_name, farmerLookup.payload.data.phone);
+
   const coords = ring(Date.now());
   const create = await call('POST', '/plots', {
-    farmer_id: farmer,
+    farmer_code: 'ND-LD-0001',
     plot_name: `Smoke ${Date.now()}`,
     crop_type: 'Lúa ST25',
+    cropping_pattern: 'XEN_CANH',
+    crop_types: ['Lúa ST25', 'Đậu leo che phủ'],
     boundary: { type: 'Polygon', coordinates: [coords] },
   });
   if (!create.ok) {
@@ -62,7 +83,7 @@ async function main() {
   console.log('created', puc);
 
   const overlap = await call('POST', '/plots', {
-    farmer_id: farmer,
+    farmer_code: 'ND-LD-0001',
     plot_name: 'Overlap twin',
     crop_type: 'Lúa ST25',
     boundary: { type: 'Polygon', coordinates: [coords] },

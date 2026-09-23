@@ -121,8 +121,9 @@ const FALLBACK_CROP_HISTORIES: Record<string, PlotCropHistory[]> = {
 };
 
 export function CropHistoryTimeline({ puc, history, onReload }: Props) {
-  const { role } = useAuth();
   const toast = useToast();
+  const { can } = useAuth();
+  const canWrite = can('writeCropHistory');
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -220,11 +221,13 @@ export function CropHistoryTimeline({ puc, history, onReload }: Props) {
             Lịch Sử Cây Trồng & Mùa Vụ ({items.length})
           </h3>
           <p className="muted" style={{ fontSize: 11.5, margin: '2px 0 0' }}>
-            Theo dõi luân canh mùa vụ, cây trồng trước/sau & cải tạo đất
+            {canWrite
+              ? 'Theo dõi luân canh mùa vụ, cây trồng trước/sau & cải tạo đất'
+              : 'Chế độ xem — chỉ HTX được ghi nhật ký luân canh'}
           </p>
         </div>
 
-        {role !== 'FARMER' && (
+        {canWrite && (
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -237,8 +240,8 @@ export function CropHistoryTimeline({ puc, history, onReload }: Props) {
         )}
       </div>
 
-      {/* Form thêm vụ mới */}
-      {showAddForm && (
+      {/* Form thêm vụ mới — chỉ Role HTX_FARMER */}
+      {canWrite && showAddForm && (
         <form onSubmit={handleAddSeason} className="add-season-form">
           <div className="add-season-head">
             <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--brand-500)' }}>

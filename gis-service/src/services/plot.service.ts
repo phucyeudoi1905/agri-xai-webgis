@@ -1,7 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GisErrorCode, GrowthStatus, RiskLevel } from '../common/enums';
+import { CroppingPattern, GisErrorCode, GrowthStatus, RiskLevel } from '../common/enums';
 import { GisException } from '../common/gis.exception';
 import { CreatePlotDto } from '../dtos/create-plot.dto';
 import { GrowthStatusHistoryEntity } from '../entities/growth-status-history.entity';
@@ -15,15 +15,36 @@ import {
   GeoJsonPolygon,
 } from '../utils/spatial/geojson.util';
 import { PucGeneratorService } from './puc-generator.service';
+import { FarmerService } from './farmer.service';
+import {
+  resolveCropTypesList,
+  resolvePrimaryCropType,
+} from '../utils/crop-pattern.util';
 import { RISK_COLORS } from '../common/enums';
 import { RiskGateway } from '../gateways/risk.gateway';
 import { ImportGeoJsonDto } from '../dtos/create-plot.dto';
+
+function safeJsonArray(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.map(String);
+    }
+  } catch {
+    /* stored as comma text */
+  }
+  return raw
+    .split(/[+,]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 @Injectable()
 export class PlotService {
   constructor(
     private readonly plots: PlotRepository,
     private readonly pucGenerator: PucGeneratorService,
+    private readonly farmers: FarmerService,
     private readonly riskGateway: RiskGateway,
     @InjectRepository(GrowthStatusHistoryEntity)
     private readonly growthHistory: Repository<GrowthStatusHistoryEntity>,
@@ -65,18 +86,77 @@ export class PlotService {
       );
     }
 
+    const pattern = dto.cropping_pattern ?? CroppingPattern.DON_CAY;
+    const cropType = resolvePrimaryCropType({
+      cropping_pattern: pattern,
+      crop_type: dto.crop_type,
+      crop_types: dto.crop_types,
+      rotation_seasons: dto.rotation_seasons,
+    });
+    if (!cropType) {
+      throw new GisException(
+        GisErrorCode.INVALID_POLYGON,
+        'Cần chọn ít nhất một loại cây trồng.',
+      );
+    }
+    const cropTypes = resolveCropTypesList({
+      cropping_pattern: pattern,
+      crop_type: dto.crop_type,
+      crop_types: dto.crop_types,
+      rotation_seasons: dto.rotation_seasons,
+    });
+
+    let farmerId = dto.farmer_id;
+    let farmerName: string | undefined;
+    let farmerPhone: string | undefined;
+    let cooperativeName: string | undefined;
+    let addressText: string | undefined;
+    let farmerCode: string | undefined;
+
+    if (dto.farmer_code?.trim()) {
+      const farmer = await this.farmers.findByCode(dto.farmer_code);
+      farmerId = farmer.id;
+      farmerName = farmer.fullName;
+      farmerPhone = farmer.phone;
+      cooperativeName = farmer.cooperativeName ?? undefined;
+      addressText = farmer.addressText ?? undefined;
+      farmerCode = farmer.farmerCode;
+    } else if (farmerId) {
+      const farmer = await this.farmers.findById(farmerId);
+      if (farmer) {
+        farmerName = farmer.fullName;
+        farmerPhone = farmer.phone;
+        cooperativeName = farmer.cooperativeName ?? undefined;
+        addressText = farmer.addressText ?? undefined;
+        farmerCode = farmer.farmerCode;
+      }
+    } else {
+      throw new GisException(
+        GisErrorCode.FARMER_NOT_FOUND,
+        'Cần nhập mã nông dân (farmer_code) hoặc farmer_id.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const areaM2 = await this.plots.computeAreaM2(boundary);
     const puc = await this.pucGenerator.generateNextPuc();
     const { publicUrl } = await this.pucGenerator.generateQrCode(puc);
 
     const plot = await this.plots.insertPlot({
       puc,
-      farmerId: dto.farmer_id,
+      farmerId: farmerId as string,
       plotName: dto.plot_name,
-      cropType: dto.crop_type,
+      cropType,
       boundary,
       areaM2,
       qrCodeUrl: publicUrl,
+      farmerName,
+      farmerPhone,
+      cooperativeName,
+      addressText,
+      farmerCode,
+      croppingPattern: pattern,
+      cropTypes: JSON.stringify(cropTypes),
     });
 
     await this.growthHistory.save(
@@ -84,9 +164,40 @@ export class PlotService {
         puc,
         fromStatus: null,
         toStatus: GrowthStatus.DANG_TRONG,
-        changedBy: dto.farmer_id,
+        changedBy: farmerId as string,
       }),
     );
+
+    if (pattern === CroppingPattern.LUAN_PHIEN && dto.rotation_seasons?.length) {
+      const seasons = dto.rotation_seasons;
+      for (let i = 0; i < seasons.length; i += 1) {
+        const s = seasons[i];
+        const isCurrent = i === seasons.length - 1;
+        await this.cropHistories.save(
+          this.cropHistories.create({
+            puc,
+            seasonName: s.season_name,
+            cropType: s.crop_type,
+            startDate: isCurrent
+              ? new Date().toISOString().slice(0, 10)
+              : '2025-01-01',
+            endDate: isCurrent ? null : '2025-12-31',
+            isCurrent,
+          }),
+        );
+      }
+    } else if (pattern === CroppingPattern.XEN_CANH && cropTypes.length > 1) {
+      await this.cropHistories.save(
+        this.cropHistories.create({
+          puc,
+          seasonName: 'Xen canh hiện tại',
+          cropType: cropType,
+          startDate: new Date().toISOString().slice(0, 10),
+          soilConditionNote: `Nhiều loại: ${cropTypes.join(', ')}`,
+          isCurrent: true,
+        }),
+      );
+    }
 
     return {
       code: 'SUCCESS',
@@ -95,10 +206,15 @@ export class PlotService {
         id: plot.id,
         puc: plot.puc,
         farmer_id: plot.farmerId,
+        farmer_code: farmerCode ?? null,
+        farmer_name: farmerName ?? null,
+        farmer_phone: farmerPhone ?? null,
         plot_name: plot.plotName,
         area_m2: Number(plot.areaM2),
         area_ha: Number((Number(plot.areaM2) / 10000).toFixed(4)),
-        crop_type: plot.cropType,
+        crop_type: cropType,
+        cropping_pattern: pattern,
+        crop_types: cropTypes,
         growth_status: plot.growthStatus,
         risk_level: plot.riskLevel,
         risk_color: RISK_COLORS[plot.riskLevel as RiskLevel],
@@ -136,6 +252,9 @@ export class PlotService {
           farmer_id: r.farmer_id,
           plot_name: r.plot_name,
           crop_type: r.crop_type,
+          cropping_pattern: r.cropping_pattern ?? 'DON_CAY',
+          crop_types: r.crop_types ? safeJsonArray(r.crop_types) : [r.crop_type],
+          farmer_code: r.farmer_code ?? null,
           growth_status: r.growth_status,
           risk_level: r.risk_level,
           risk_color: RISK_COLORS[r.risk_level as RiskLevel],
@@ -194,6 +313,9 @@ export class PlotService {
         farmer_id: row.farmer_id,
         plot_name: row.plot_name,
         crop_type: row.crop_type,
+        cropping_pattern: row.cropping_pattern ?? 'DON_CAY',
+        crop_types: row.crop_types ? safeJsonArray(row.crop_types) : [row.crop_type],
+        farmer_code: row.farmer_code ?? null,
         growth_status: row.growth_status,
         risk_level: row.risk_level,
         risk_color: RISK_COLORS[row.risk_level as RiskLevel],

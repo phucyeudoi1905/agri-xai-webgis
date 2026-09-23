@@ -5,12 +5,14 @@ import { CadastralEntryModal } from '../components/forms/CadastralEntryModal';
 import { CreatePlotModal } from '../components/forms/CreatePlotModal';
 import { ShippingModal } from '../components/forms/ShippingModal';
 import { GISMap, type Basemap } from '../components/map/GISMap';
+import { PlaceSearchBox } from '../components/map/PlaceSearchBox';
 import { PlotDetailPanel } from '../components/map/PlotDetailPanel';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Icon } from '../components/ui/Icon';
 import { useViewportPlots } from '../hooks/usePlotData';
 import { fetchAllPlots, fetchPlotByPuc, connectRiskSocket } from '../services/gisApi';
 import { useToast } from '../components/ui/toastContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatNumber } from '../lib/format';
 import { RISK_META, growthLabel } from '../lib/gis';
 import type { GeoJsonPolygon } from '../types/gis.types';
@@ -26,6 +28,7 @@ const BASEMAP_OPTIONS: Array<{ id: Basemap; label: string }> = [
 export function MapPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [map, setMap] = useState<LeafletMap | null>(null);
+  const { isAdmin, can } = useAuth();
   const { features, loading, error, reload } = useViewportPlots(map);
 
   const [basemap, setBasemap] = useState<Basemap>('satellite');
@@ -163,8 +166,22 @@ export function MapPage() {
     <div className={`map-page ${drawing ? 'map-drawing' : ''}`.trim()}>
       <div className="map-kpi-bar">
         <div className="map-kpi-item">
-          <Icon name="sprout" size={15} />
-          <span className="map-kpi-label">Vùng canh tác:</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              padding: '2px 8px',
+              borderRadius: 6,
+              background: isAdmin ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+              color: isAdmin ? '#2563eb' : '#059669',
+              border: isAdmin ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
+            }}
+          >
+            {isAdmin ? 'QUẢN LÝ VĨ MÔ (ADMIN)' : 'HỢP TÁC XÃ / NÔNG DÂN'}
+          </span>
+          <span className="map-kpi-label">
+            {isAdmin ? 'Quy hoạch tỉnh:' : 'Thửa đất HTX:'}
+          </span>
           <span className="map-kpi-val">{features.length} lô đất</span>
         </div>
 
@@ -293,7 +310,7 @@ export function MapPage() {
               }}
             >
               <Icon name="pen" size={15} />
-              Vẽ lô đất
+              {isAdmin ? 'Vẽ quy hoạch' : 'Vẽ thửa đất'}
             </button>
 
             <button
@@ -354,6 +371,10 @@ export function MapPage() {
           </div>
         </div>
 
+        <div className="map-float tr">
+          <PlaceSearchBox map={map} disabled={drawing || gpsWalking} />
+        </div>
+
         <div className="map-float bl">
           <div className="legend-card">
             <h4>Mức rủi ro</h4>
@@ -376,7 +397,7 @@ export function MapPage() {
             puc={selectedPuc}
             onClose={() => setSelectedPuc(null)}
             onChanged={() => void reload()}
-            onLogShipment={setShippingPuc}
+            onLogShipment={can('createBatch') ? setShippingPuc : undefined}
           />
         )}
       </div>
@@ -397,7 +418,7 @@ export function MapPage() {
         />
       )}
 
-      {shippingPuc && (
+      {shippingPuc && can('createBatch') && (
         <ShippingModal
           puc={shippingPuc}
           onClose={() => setShippingPuc(null)}

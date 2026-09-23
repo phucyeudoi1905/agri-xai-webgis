@@ -1,122 +1,173 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useServiceHealth } from '../../hooks/useServiceHealth';
-import { useAuth, type UserRole } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Icon, type IconName } from '../ui/Icon';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 interface NavItem {
   to: string;
   label: string;
+  shortLabel: string;
   icon: IconName;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { to: '/map', label: 'Bản Đồ GIS', icon: 'map' },
-  { to: '/plots', label: 'Sổ Vùng Trồng', icon: 'list' },
-  { to: '/trace', label: 'Xuất Kho & PUC', icon: 'qr' },
-  { to: '/', label: 'Báo Cáo & Thống Kê', icon: 'dashboard' },
+/** Portal Admin — giám sát vĩ mô, duyệt PUC, báo cáo tỉnh */
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  { to: '/', label: 'Báo cáo toàn tỉnh', shortLabel: 'Báo cáo', icon: 'dashboard' },
+  { to: '/map', label: 'Bản đồ quy hoạch', shortLabel: 'Bản đồ', icon: 'map' },
+  { to: '/plots', label: 'Duyệt vùng trồng & PUC', shortLabel: 'Duyệt PUC', icon: 'list' },
+  { to: '/trace', label: 'Giám sát chuỗi cung ứng', shortLabel: 'Giám sát', icon: 'qr' },
+];
+
+/** Portal HTX / Nông dân — số hóa thửa, sổ mùa vụ, xuất kho BATCH */
+const FARMER_NAV_ITEMS: NavItem[] = [
+  { to: '/map', label: 'Vùng trồng của tôi', shortLabel: 'Vùng trồng', icon: 'map' },
+  { to: '/plots', label: 'Sổ mùa vụ & luân canh', shortLabel: 'Sổ vụ', icon: 'sprout' },
+  { to: '/trace', label: 'Xuất kho & tem QR', shortLabel: 'Xuất kho', icon: 'qr' },
+  { to: '/', label: 'Tổng quan sản lượng HTX', shortLabel: 'Tổng quan', icon: 'dashboard' },
 ];
 
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const health = useServiceHealth();
-  const { user, role, switchRole } = useAuth();
+  const { user, role, isAdmin, logout } = useAuth();
+
+  if (!user) return null;
 
   const isMapView = location.pathname === '/map';
+  const navItems = isAdmin ? ADMIN_NAV_ITEMS : FARMER_NAV_ITEMS;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
+
+  const primaryCta = isAdmin
+    ? {
+        label: 'Duyệt / Tạo lô đất',
+        title: 'Cấp mã số vùng trồng và vẽ ranh giới quy hoạch',
+        to: '/map?draw=1',
+        icon: 'plus' as IconName,
+      }
+    : {
+        label: 'Đăng ký lô đất',
+        title: 'Số hóa ranh giới thửa đất thành viên HTX',
+        to: '/map?draw=1',
+        icon: 'sprout' as IconName,
+      };
 
   return (
-    <div className="shell">
-      {/* Top Header Navbar (Ziinpv Style) */}
+    <div className={`shell shell-role-${isAdmin ? 'admin' : 'farmer'}`}>
       <header className="app-header">
-        {/* Left: Branding & Region */}
-        <div className="header-brand" onClick={() => navigate('/')}>
-          <div className="brand-icon-box">
-            <Icon name="sprout" size={20} />
+        <div className="header-brand" onClick={() => navigate(isAdmin ? '/' : '/map')}>
+          <div className={`brand-icon-box ${isAdmin ? 'admin-box' : 'htx-box'}`}>
+            <Icon name={isAdmin ? 'target' : 'sprout'} size={20} />
           </div>
           <div className="brand-titles">
             <div className="brand-title-row">
               <span className="brand-title-main">AgriGIS</span>
-              <span className="brand-badge">Lâm Đồng</span>
+              <span className={`brand-badge ${isAdmin ? 'badge-admin' : 'badge-htx'}`}>
+                {isAdmin ? 'Quản lý nhà nước' : 'HTX Cầu Đất'}
+              </span>
             </div>
             <span className="brand-subtitle">
-              Hệ Thống Số Hóa Vùng Trồng & Cấp Mã PUC
+              {isAdmin
+                ? 'Chi Cục Trồng Trọt & BVTV Lâm Đồng · Giám sát vĩ mô'
+                : 'Hợp tác xã Cà phê Cầu Đất Farm · Sản xuất & xuất kho'}
             </span>
           </div>
         </div>
 
-        {/* Center: Navigation Pill-Tabs Capsule */}
-        <nav className="header-nav" aria-label="Điều hướng chính">
-          {NAV_ITEMS.map((item) => {
+        <nav className="header-nav" aria-label={isAdmin ? 'Menu quản lý nhà nước' : 'Menu HTX / nông dân'}>
+          {navItems.map((item) => {
             const isActive =
               item.to === '/'
                 ? location.pathname === '/'
                 : location.pathname.startsWith(item.to);
             return (
               <NavLink
-                key={item.to}
+                key={`${role}-${item.to}`}
                 to={item.to}
                 end={item.to === '/'}
                 className={`nav-pill ${isActive ? 'active' : ''}`.trim()}
+                title={item.label}
               >
                 <Icon name={item.icon} size={15} />
-                <span>{item.label}</span>
+                <span className="nav-pill-label">{item.label}</span>
+                <span className="nav-pill-short">{item.shortLabel}</span>
               </NavLink>
             );
           })}
         </nav>
 
-        {/* Right: User Profile & Role, Theme, & Action CTA */}
         <div className="header-actions">
-          {/* User Account Switcher */}
           <div className="user-profile-badge" title={user.roleTitle}>
-            <span className="user-avatar-circle">{user.avatarLetter}</span>
+            <span
+              className="user-avatar-circle"
+              style={{
+                background: isAdmin
+                  ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'
+                  : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              }}
+            >
+              {user.avatarLetter}
+            </span>
             <div className="user-info-text">
               <span className="user-name-label">{user.name}</span>
               <span className="user-role-label">
-                {role === 'ADMIN'
-                  ? '🛡️ Quản trị / Cán bộ NN'
-                  : role === 'HTX'
-                    ? '🏢 Chủ Hợp Tác Xã'
-                    : '👨‍🌾 Nông Dân Canh Tác'}
+                {isAdmin ? 'Admin · Chi Cục NN' : 'Chủ thể HTX / Nông dân'}
               </span>
             </div>
-            <select
-              className="user-role-select-overlay"
-              value={role}
-              onChange={(e) => switchRole(e.target.value as UserRole)}
-              title="Đổi tài khoản phân quyền"
-            >
-              <option value="HTX">🏢 K'Brông · Chủ HTX Cầu Đất</option>
-              <option value="ADMIN">🛡️ Nguyễn Thanh Hùng · Admin Chi cục</option>
-              <option value="FARMER">👨‍🌾 Trần Thị Mai · Nông dân Vạn Thành</option>
-            </select>
           </div>
+
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleLogout}
+            title="Đăng xuất"
+          >
+            Thoát
+          </button>
 
           <ThemeToggle />
 
-          {/* New Plot CTA Button (Chỉ hiển thị cho Admin & HTX) */}
-          {role !== 'FARMER' && (
-            <button
-              type="button"
-              className="btn-new-plot"
-              onClick={() => navigate('/map?action=create')}
-            >
-              <Icon name="plus" size={14} />
-              <span>Số Hóa Lô Đất</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn-new-plot"
+            style={
+              isAdmin
+                ? { background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }
+                : undefined
+            }
+            onClick={() => navigate(primaryCta.to)}
+            title={primaryCta.title}
+          >
+            <Icon name={primaryCta.icon} size={14} />
+            <span>{primaryCta.label}</span>
+          </button>
         </div>
       </header>
 
-      {/* Main Content Stage */}
+      <div className={`workspace-banner ${isAdmin ? 'admin' : 'htx_farmer'}`}>
+        <div className="workspace-banner-left">
+          <span className="workspace-tag">
+            {isAdmin ? 'PORTAL ADMIN · CƠ QUAN QUẢN LÝ' : 'PORTAL HTX · CHỦ THỂ SẢN XUẤT'}
+          </span>
+          <span className="workspace-desc">
+            {isAdmin
+              ? 'Giám sát toàn tỉnh, phê duyệt mã PUC, theo dõi rủi ro dịch tễ — không tạo phiếu BATCH.'
+              : 'Số hóa thửa thành viên, nhật ký mùa vụ, lập phiếu xuất kho BATCH & tem QR.'}
+          </span>
+        </div>
+      </div>
+
       <main className="main-content-wrapper">
         <div className={isMapView ? 'main-fullscreen' : 'main-scrollable'}>
           <Outlet />
         </div>
       </main>
 
-      {/* Footer on scrollable views */}
       {!isMapView && (
         <footer className="app-footer">
           <div className="footer-system-status">
@@ -127,14 +178,15 @@ export function AppShell() {
             />
             <span>
               {health === 'up'
-                ? 'GIS Core Service & PostGIS Sẵn sàng'
+                ? 'GIS Core Service & PostGIS sẵn sàng'
                 : health === 'checking'
                   ? 'Đang kiểm tra kết nối...'
                   : 'Mất kết nối API'}
             </span>
           </div>
           <div className="muted">
-            AgriGIS Vietnam · Nông nghiệp số công nghệ cao tỉnh Lâm Đồng (Đà Lạt)
+            AgriGIS Vietnam · Farm-to-Fork Lâm Đồng ·{' '}
+            {isAdmin ? 'Không gian quản lý nhà nước' : 'Không gian HTX / nông dân'}
           </div>
         </footer>
       )}

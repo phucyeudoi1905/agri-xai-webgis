@@ -18,6 +18,9 @@ export interface PlotProperties {
   farmer_id: string;
   plot_name: string;
   crop_type: string;
+  cropping_pattern?: string;
+  crop_types?: string[];
+  farmer_code?: string | null;
   growth_status: GrowthStatus;
   risk_level: RiskLevel;
   risk_color: string;
@@ -78,6 +81,9 @@ export interface PlotDetail {
   farmer_id: string;
   plot_name: string;
   crop_type: string;
+  cropping_pattern?: string;
+  crop_types?: string[];
+  farmer_code?: string | null;
   growth_status: GrowthStatus;
   risk_level: RiskLevel;
   risk_color: string;

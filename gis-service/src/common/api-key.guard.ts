@@ -6,20 +6,31 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
+export interface JwtPayload {
+  sub: string;
+  username: string;
+  role: 'ADMIN' | 'HTX_FARMER';
+  name: string;
+}
+
 /**
- * Khi API_KEY được cấu hình: mọi route không @Public() phải gửi X-API-Key.
- * Khi API_KEY trống (dev mặc định): cho phép tất cả — thuận tiện local.
+ * Route không @Public():
+ * - Bearer JWT hợp lệ, hoặc
+ * - X-API-Key khớp (webhook AI / smoke), hoặc
+ * - Cả JWT_SECRET và API_KEY đều trống (dev mở).
  */
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   constructor(
     private readonly config: ConfigService,
     private readonly reflector: Reflector,
+    private readonly jwt: JwtService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     if (context.getType() !== 'http') return true;
 
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -28,20 +39,42 @@ export class ApiKeyGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const expected = this.config.get<string>('API_KEY')?.trim();
-    if (!expected) return true;
-
     const req = context.switchToHttp().getRequest<{
       headers: Record<string, string | undefined>;
+      user?: JwtPayload;
     }>();
+
+    const authHeader = req.headers.authorization || req.headers.Authorization || '';
+    const bearer = authHeader.startsWith('Bearer ')
+      ? authHeader.slice(7).trim()
+      : '';
+    const jwtSecret = this.config.get<string>('JWT_SECRET')?.trim();
+    if (bearer && jwtSecret) {
+      try {
+        req.user = await this.jwt.verifyAsync<JwtPayload>(bearer);
+        return true;
+      } catch {
+        throw new UnauthorizedException({
+          code: 'ERR_AUTH_TOKEN_EXPIRED',
+          message: 'Token JWT hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.',
+        });
+      }
+    }
+
+    const expectedKey = this.config.get<string>('API_KEY')?.trim();
     const provided =
       req.headers['x-api-key'] || req.headers['X-API-Key'] || '';
-    if (provided !== expected) {
-      throw new UnauthorizedException({
-        code: 'ERR_AUTH_API_KEY',
-        message: 'Thiếu hoặc sai X-API-Key.',
-      });
+    if (expectedKey && provided === expectedKey) {
+      return true;
     }
-    return true;
+
+    if (!jwtSecret && !expectedKey) {
+      return true;
+    }
+
+    throw new UnauthorizedException({
+      code: 'ERR_AUTH_TOKEN_EXPIRED',
+      message: 'Cần đăng nhập JWT (Authorization: Bearer) hoặc X-API-Key.',
+    });
   }
 }

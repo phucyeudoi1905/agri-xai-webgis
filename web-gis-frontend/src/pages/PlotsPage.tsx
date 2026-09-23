@@ -5,13 +5,14 @@ import { Card, CardHead } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Icon } from '../components/ui/Icon';
 import { useAllPlots } from '../hooks/usePlotData';
+import { useAuth } from '../contexts/AuthContext';
 import { formatDate, formatNumber } from '../lib/format';
-
 
 type SortKey = 'created' | 'area' | 'name';
 
 export function PlotsPage() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const { features, loading, error, reload } = useAllPlots();
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortKey>('created');
@@ -54,8 +55,16 @@ export function PlotsPage() {
     <div className="page-narrow stack">
       <Card>
         <CardHead
-          title={`${formatNumber(rows.length)} lô đất`}
-          subtitle={`Tổng diện tích đang hiển thị: ${formatNumber(totalArea / 10000, 2)} ha`}
+          title={
+            isAdmin
+              ? `Duyệt vùng trồng toàn tỉnh (${formatNumber(rows.length)} lô)`
+              : `Sổ thửa đất canh tác HTX (${formatNumber(rows.length)} lô)`
+          }
+          subtitle={
+            isAdmin
+              ? `Portal Admin · Tổng diện tích: ${formatNumber(totalArea / 10000, 2)} ha — thẩm định & cấp PUC`
+              : `Portal HTX Cầu Đất · Diện tích thành viên: ${formatNumber(totalArea / 10000, 2)} ha`
+          }
           actions={
             <div className="row">
               <button
@@ -66,14 +75,26 @@ export function PlotsPage() {
                 {loading ? <span className="spinner" /> : <Icon name="refresh" size={15} />}
                 Làm mới
               </button>
-              <button
-                type="button"
-                className="btn btn-sm"
-                onClick={() => navigate('/map?draw=1')}
-              >
-                <Icon name="pen" size={15} />
-                Số hóa lô đất
-              </button>
+              {isAdmin ? (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                  onClick={() => navigate('/map?draw=1')}
+                >
+                  <Icon name="pen" size={15} />
+                  + Duyệt / Tạo lô mới
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => navigate('/map?draw=1')}
+                >
+                  <Icon name="sprout" size={15} />
+                  + Đăng ký lô đất
+                </button>
+              )}
             </div>
           }
         />

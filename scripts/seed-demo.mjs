@@ -6,12 +6,19 @@
  */
 const BASE = process.argv[2] ?? 'http://localhost:4000';
 const API = `${BASE}/api/v1/gis`;
+const AUTH_USER = process.env.SEED_USER ?? 'admin_gis';
+const AUTH_PASS = process.env.SEED_PASS ?? 'AgriAdmin@2026';
 
-const FARMERS = [
-  'a3b8e912-4c5d-6e7f-8a9b-0c1d2e3f4a5b',
-  'b7c91d24-8e3f-4a52-9d61-7f0e2c4b8a13',
-  'c1d84f36-2b57-4e98-8a02-5c6d9e1f3b47',
+const FARMER_CODES = [
+  'ND-LD-0001',
+  'ND-LD-0002',
+  'ND-LD-0003',
+  'ND-LD-0004',
+  'ND-LD-0005',
+  'ND-LD-0006',
 ];
+
+let accessToken = '';
 
 /** Tọa độ vùng nông nghiệp công nghệ cao Đà Lạt (vùng Thái Phiên / Trại Mát / Cầu Đất) */
 const ORIGIN = { lng: 108.45, lat: 11.94 };
@@ -130,10 +137,26 @@ function ringAt(col, row) {
   ];
 }
 
+async function login() {
+  const res = await fetch(`${BASE}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: AUTH_USER, password: AUTH_PASS }),
+  });
+  const payload = await res.json();
+  if (!res.ok) {
+    throw new Error(`login → ${res.status}: ${payload?.message ?? JSON.stringify(payload)}`);
+  }
+  accessToken = payload.data.access_token;
+}
+
 async function call(method, path, body) {
   const res = await fetch(`${API}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -152,6 +175,7 @@ async function call(method, path, body) {
 }
 
 async function main() {
+  await login();
   const created = [];
 
   for (let i = 0; i < PLOTS.length; i += 1) {
@@ -159,9 +183,10 @@ async function main() {
     const ring = ringAt(i % 3, Math.floor(i / 3));
     try {
       const res = await call('POST', '/plots', {
-        farmer_id: FARMERS[i % FARMERS.length],
+        farmer_code: FARMER_CODES[i % FARMER_CODES.length],
         plot_name: spec.name,
         crop_type: spec.crop,
+        cropping_pattern: 'DON_CAY',
         boundary: { type: 'Polygon', coordinates: [ring] },
       });
       const puc = res.data.puc;
@@ -178,7 +203,7 @@ async function main() {
       if (plot.growth !== 'DANG_TRONG') {
         await call('PATCH', `/plots/${plot.puc}/growth-status`, {
           growth_status: plot.growth,
-          changed_by: FARMERS[0],
+          changed_by: 'a3b8e912-4c5d-6e7f-8a9b-0c1d2e3f4a5b',
         });
         console.log(`  ↳ sinh trưởng: ${plot.growth}`);
       }

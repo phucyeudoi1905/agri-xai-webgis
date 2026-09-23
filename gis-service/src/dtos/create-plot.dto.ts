@@ -3,6 +3,7 @@ import {
   ArrayMinSize,
   Equals,
   IsArray,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -10,6 +11,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
+import { CroppingPattern } from '../common/enums';
 
 class GeoJsonPolygonDto {
   @Equals('Polygon')
@@ -20,17 +22,49 @@ class GeoJsonPolygonDto {
   coordinates: number[][][];
 }
 
+export class RotationSeasonDto {
+  @IsString()
+  @MaxLength(100)
+  season_name: string;
+
+  @IsString()
+  @MaxLength(100)
+  crop_type: string;
+}
+
 export class CreatePlotDto {
+  @IsOptional()
   @IsUUID()
-  farmer_id: string;
+  farmer_id?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  farmer_code?: string;
 
   @IsString()
   @MaxLength(100)
   plot_name: string;
 
+  @IsOptional()
   @IsString()
-  @MaxLength(50)
-  crop_type: string;
+  @MaxLength(255)
+  crop_type?: string;
+
+  @IsOptional()
+  @IsEnum(CroppingPattern)
+  cropping_pattern?: CroppingPattern;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  crop_types?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RotationSeasonDto)
+  rotation_seasons?: RotationSeasonDto[];
 
   @ValidateNested()
   @Type(() => GeoJsonPolygonDto)

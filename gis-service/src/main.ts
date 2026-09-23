@@ -36,6 +36,7 @@ async function bootstrap() {
       .setTitle('Agri XAI — GIS Service')
       .setDescription('Web GIS API Nhóm 2 — PUC / Spatial / Traceability')
       .setVersion('0.1.0')
+      .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'jwt')
       .addApiKey({ type: 'apiKey', name: 'X-API-Key', in: 'header' }, 'apiKey')
       .build();
     SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, swagger));

@@ -7,6 +7,7 @@ import type {
   PlotFeatureCollection,
   RiskSummaryRow,
 } from '../types/gis.types';
+import { getStoredToken } from '../lib/authStorage';
 
 const baseURL = import.meta.env.VITE_GIS_API_URL || 'http://localhost:4000';
 const apiKey = (import.meta.env.VITE_GIS_API_KEY as string | undefined)?.trim();
@@ -20,8 +21,61 @@ api.interceptors.request.use((config) => {
   if (apiKey) {
     config.headers.set('X-API-Key', apiKey);
   }
+  const token = getStoredToken();
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
+  }
   return config;
 });
+
+export async function loginRequest(username: string, password: string) {
+  const { data } = await api.post<{
+    code: string;
+    data: {
+      access_token: string;
+      user: {
+        id: string;
+        username: string;
+        name: string;
+        role: string;
+        phone?: string | null;
+        cooperativeName?: string | null;
+      };
+    };
+  }>('/api/v1/auth/login', { username, password });
+  return data.data;
+}
+
+export async function fetchMe() {
+  const { data } = await api.get<{
+    code: string;
+    data: {
+      id: string;
+      username: string;
+      name: string;
+      role: string;
+      phone?: string | null;
+      cooperativeName?: string | null;
+    };
+  }>('/api/v1/auth/me');
+  return data.data;
+}
+
+export interface FarmerRecord {
+  id: string;
+  farmer_code: string;
+  full_name: string;
+  phone: string;
+  cooperative_name: string | null;
+  address_text: string | null;
+}
+
+export async function fetchFarmerByCode(code: string): Promise<FarmerRecord> {
+  const { data } = await api.get<{ code: string; data: FarmerRecord }>(
+    `/api/v1/gis/farmers/${encodeURIComponent(code)}`,
+  );
+  return data.data;
+}
 
 export type Bbox = [number, number, number, number];
 
@@ -63,9 +117,13 @@ export async function fetchCropStats(): Promise<CropStatRow[]> {
 }
 
 export async function createPlot(payload: {
-  farmer_id: string;
+  farmer_id?: string;
+  farmer_code?: string;
   plot_name: string;
-  crop_type: string;
+  crop_type?: string;
+  cropping_pattern?: 'DON_CAY' | 'XEN_CANH' | 'LUAN_PHIEN';
+  crop_types?: string[];
+  rotation_seasons?: Array<{ season_name: string; crop_type: string }>;
   boundary: GeoJsonPolygon;
 }) {
   const { data } = await api.post('/api/v1/gis/plots', payload);

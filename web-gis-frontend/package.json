@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test src/lib/lamDongPlaces.test.ts src/lib/mapBounds.test.ts src/lib/rolePermissions.test.ts src/lib/normalizeRole.test.ts src/lib/cropPattern.test.ts",
+    "test:new": "npm run test && npm run lint && npx tsc --noEmit && npm run build"
   },
   "dependencies": {
     "axios": "^1.11.0",

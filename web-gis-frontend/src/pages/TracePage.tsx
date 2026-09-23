@@ -8,6 +8,7 @@ import { Icon } from '../components/ui/Icon';
 import { StatCard } from '../components/ui/StatCard';
 import { WeatherCard } from '../components/ui/WeatherCard';
 import { usePlotDetail } from '../hooks/usePlotDetail';
+import { useAuth } from '../contexts/AuthContext';
 import {
   formatArea,
   formatDate,
@@ -30,6 +31,8 @@ const DEMO_PUCS = [
 export function TracePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAdmin, can } = useAuth();
+  const canCreateBatch = can('createBatch');
   const activePuc = searchParams.get('puc') ?? '';
   const [input, setInput] = useState(activePuc);
   const [shippingOpen, setShippingOpen] = useState(false);
@@ -56,6 +59,18 @@ export function TracePage() {
   return (
     <div className="page-narrow stack">
       <Card>
+        <CardHead
+          title={
+            isAdmin
+              ? 'Giám sát chuỗi cung ứng & truy xuất PUC'
+              : 'Xuất kho BATCH & tra cứu tem QR'
+          }
+          subtitle={
+            isAdmin
+              ? 'Portal Admin: tra cứu hồ sơ Farm-to-Fork, giám sát lô hàng — không tạo phiếu xuất kho.'
+              : 'Portal HTX: lập phiếu xuất kho, sinh mã BATCH và in tem QR dán bao bì.'
+          }
+        />
         <CardBody>
           <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
             <div className="search" style={{ flex: '1 1 320px' }}>
@@ -343,16 +358,22 @@ export function TracePage() {
               <Card>
                 <CardHead
                   title="Nhật ký xuất xưởng"
-                  subtitle="Mã lô hàng gắn với PUC phục vụ truy xuất nguồn gốc"
+                  subtitle={
+                    canCreateBatch
+                      ? 'Mã lô hàng BATCH gắn PUC — lập phiếu khi thu hoạch'
+                      : 'Chỉ đọc: Admin giám sát chuỗi; HTX tạo BATCH'
+                  }
                   actions={
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setShippingOpen(true)}
-                    >
-                      <Icon name="plus" size={14} />
-                      Ghi nhận
-                    </button>
+                    canCreateBatch ? (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => setShippingOpen(true)}
+                      >
+                        <Icon name="plus" size={14} />
+                        Lập phiếu BATCH
+                      </button>
+                    ) : undefined
                   }
                 />
                 <div className="card-body card-body-flush">
@@ -360,7 +381,11 @@ export function TracePage() {
                     <EmptyState
                       icon="truck"
                       title="Chưa có lô hàng"
-                      description="Ghi nhận sản lượng thu hoạch để hệ thống cấp mã BATCH."
+                      description={
+                        canCreateBatch
+                          ? 'Ghi nhận sản lượng thu hoạch để hệ thống cấp mã BATCH.'
+                          : 'Chưa có phiếu xuất kho từ HTX trên mã PUC này.'
+                      }
                     />
                   ) : (
                     <div className="table-wrap">
@@ -451,7 +476,7 @@ export function TracePage() {
         </>
       )}
 
-      {shippingOpen && activePuc && (
+      {shippingOpen && activePuc && canCreateBatch && (
         <ShippingModal
           puc={activePuc}
           onClose={() => setShippingOpen(false)}

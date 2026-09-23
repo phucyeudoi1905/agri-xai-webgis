@@ -32,8 +32,17 @@ export class PlotEntity {
   @Column({ type: 'numeric', precision: 12, scale: 2, name: 'area_m2' })
   areaM2: number;
 
-  @Column({ type: 'varchar', length: 50, name: 'crop_type' })
+  @Column({ type: 'varchar', length: 255, name: 'crop_type' })
   cropType: string;
+
+  @Column({ type: 'varchar', length: 20, name: 'cropping_pattern', default: 'DON_CAY' })
+  croppingPattern: string;
+
+  @Column({ type: 'text', name: 'crop_types', nullable: true })
+  cropTypes: string | null;
+
+  @Column({ type: 'varchar', length: 30, name: 'farmer_code', nullable: true })
+  farmerCode: string | null;
 
   @Column({
     type: 'varchar',
